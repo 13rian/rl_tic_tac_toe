@@ -3,8 +3,8 @@
 
 ## Goal of this Project 
 The idea of this project is to try out different reinforcement learning algorithms to learn the game Tic Tac Toe. Tic Tac Toe is easy to implement and has a small state space. This is why the training of the neural networks will be fast. The goal is to use successful algorithms for more complex games such as Othello or Chess.
-The different algorithms are in the folder called rl. Each subfolder contains a different reinforcement learning algorithm. In order to run the algorithms
-- run MainSelfPlayTraining.py to learn an agent how to play the game
+The different algorithms are in the folder called rl. Each subfolder contains a different reinforcement learning algorithm. In order to run the algorithms  
+- run MainSelfPlayTraining.py to learn an agent how to play the game  
 - run MainTestPlay.py to let the agent play against a random opponent
 
 
@@ -22,7 +22,7 @@ Since Tic Tac Toe is a zero sum game with perfect information it is possible to 
 q(s,a) = argmax V(succ(s,a)) for white
 q(s,a) = argmin V(succ(s,a)) for black
 
-The value function V is approximated by a neural network which takes the board configuration as input. The board is represented by a vector of size 27. The first 9 elements are the white pieces, the next 9 elements are the black pieces and the last 9 elements are all 0's if it is white's move and all 1' if it is black's move. The neural network has only a single number V(s_t) between -1 and 1 as output that tells us how good it is to be in the current position. 1 means that white is winning and -1 means that black is winning. A value of 0 means that the position is estimated as equal. 
+The value function V is approximated by a neural network which takes the board configuration as input. The board is represented by a vector of size 27. The first 9 elements are the white pieces, the next 9 elements are the black pieces and the last 9 elements are all 0's if it is white's move and all 1's if it is black's move. The neural network has only a single number V(s_t) between -1 and 1 as output that tells us how good it is to be in the current position. 1 means that white is winning and -1 means that black is winning. A value of 0 means that the position is estimated as equal. 
 
 ### TD(0) Learning
 - Training of a neural network with correlated data tends to be unstable. Additionally, as the agent is learning his policy changes as well. The target to learn is therefore not stationary and convergence is not guaranteed. For this reasons the following stabilization strategies were chosen:
