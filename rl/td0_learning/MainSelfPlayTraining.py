@@ -22,8 +22,8 @@ random.seed(a=None, version=2)
 
 
 # start to train the neural network
-epoch_count = 480               # the number of epochs to train the neural network 962 ~ 100'000 episodes ~ 1h
-episode_count = 104             # the number of games that are self-played in one epoch
+epoch_count = 1000              # the number of epochs to train the neural network 100'000 episodes ~ 1h
+episode_count = 100             # the number of games that are self-played in one epoch
 update_count = 9*episode_count  # the number the neural net is updated  in one epoch with the experience data
 test_interval = 10              # epoch intervals at which the network plays against a random player
 test_game_count = 1000          # the number of games that are played in the test against the random opponent

@@ -11,19 +11,14 @@ from game.globals import Globals, CONST
 
 
 
-
-
-
-
-
 class Network(nn.Module):
     def __init__(self, learning_rate):
         super(Network, self).__init__()
                 
-        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 81)   # first fully connected layer
-        self.fc2 = nn.Linear(81, 36)                    # second fully connected layer
-        self.fc3 = nn.Linear(36, 9)
-        self.fc4 = nn.Linear(9, 1)                      # approximation for the value function V(s)
+        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 54)    # first fully connected layer
+        self.fc2 = nn.Linear(54, 27)                     # second fully connected layer
+        self.fc3 = nn.Linear(28, 9)                      # add what player is about to move to this feature vector
+        self.fc4 = nn.Linear(9, 1)                       # approximation for the value function V(s)
         
         
         # define the optimizer
@@ -38,7 +33,7 @@ class Network(nn.Module):
         nn.init.normal_(self.fc4.weight, mean=mean, std=std)
          
         
-    def forward(self, x):            
+    def forward(self, x, players):
         # fc layer 1
         x = self.fc1(x)             
         x = F.relu(x)
@@ -48,7 +43,9 @@ class Network(nn.Module):
         x = F.relu(x)
         
         # fc layer 3
+        x = torch.cat((x, players), dim=1)
         x = self.fc3(x)
+        x = F.relu(x)
         
         # fc layer 4
         x = self.fc4(x)
@@ -57,20 +54,25 @@ class Network(nn.Module):
         return x
 
 
-    # executes one training step of the neural network
-    # batch:      tensor with data [batchSize, nn_input_size]
-    # target:     tensor with the true q-values estimated by the Bellmann equation
-    # return:     the loss
-    def train_step(self, batch, target):
+    def train_step(self, batch, player, target):
+        """
+        executes one training step of the neural network
+        :param batch:   tensor with data [batchSize, nn_input_size]
+        :param player:  the player who's move it is
+        :param target:  tensor with the true q-values estimated by the Bellmann equation
+        :return:        the loss
+        """
+
         self.train()     # allow the weights to be changed
          
         # send the tensors to the used device
         data = batch.to(Globals.device)
+        player = player.to(Globals.device)
         label = target.to(Globals.device)
          
-        self.optimizer.zero_grad()   # reset the gradients to zero in every epoch
-        prediction = self(data)      # pass the data through the network
-        criterion = nn.MSELoss()     # use the log-likelihood loss
+        self.optimizer.zero_grad()          # reset the gradients to zero in every epoch
+        prediction = self(data, player)     # pass the data through the network
+        criterion = nn.MSELoss()            # use the log-likelihood loss
          
         # define the loss
         loss = criterion(prediction, label)
@@ -80,7 +82,6 @@ class Network(nn.Module):
 
 
 class Agent:
-
     def __init__(self, learning_rate, epsilon, disc, lambda_param, batch_size, exp_buffer_size):
         """
         :param learning_rate:       learning rate for the neural network
@@ -105,9 +106,12 @@ class Agent:
         
         # to save the experience of one episode
         self.state_list = []
+        self.player_list = []
+        self.player_list = []
         self.reward_list = []
         self.not_terminal_list = []
-        self.successor_state_list = []
+        self.succ_state_list = []
+        self.succ_player_list = []
         
 
     def reset_game(self):
@@ -115,12 +119,13 @@ class Agent:
         
         # reset the experience lists
         self.state_list = []
+        self.player_list = []
         self.reward_list = []
         self.not_terminal_list = []
-        self.successor_state_list = []
+        self.succ_state_list = []
+        self.succ_player_list = []
         
-        
-    # returns true if the game is finished and false if it is still ongoing
+
     def game_terminal(self):
         return self.board.terminal
     
@@ -140,13 +145,15 @@ class Agent:
         
         # calculate the eligibilities recursively
         state = torch.Tensor(self.state_list).reshape(-1, CONST.NN_INPUT_SIZE)
+        player = torch.Tensor(self.player_list).unsqueeze(1)
         reward = torch.Tensor(self.reward_list).unsqueeze(1)
         not_terminal = torch.Tensor(self.not_terminal_list).unsqueeze(1)
-        successor_state = torch.Tensor(self.successor_state_list).reshape(-1, CONST.NN_INPUT_SIZE)
-        eligibility = self.experience_buffer.calc_eligibility(self.network, reward, successor_state, self.lambda_param, self.disc)
+        succ_state = torch.Tensor(self.succ_state_list).reshape(-1, CONST.NN_INPUT_SIZE)
+        succ_player = torch.Tensor(self.succ_player_list).unsqueeze(1)
+        eligibility = self.experience_buffer.calc_eligibility(self.network, reward, succ_state, succ_player, self.lambda_param, self.disc)
             
         # add all the experiences of the game to the experience buffer 
-        self.experience_buffer.add_batch(state, reward, not_terminal, successor_state, eligibility)
+        self.experience_buffer.add_batch(state, player, reward, not_terminal, succ_state, succ_player, eligibility)
             
 
     def epsilon_greedy_move(self):
@@ -156,7 +163,7 @@ class Agent:
         """
 
         # get the current state
-        state = self.board.bit_board_representation()
+        state, player = self.board.bit_board_representation()
         
         # choose the move to play
         if random.random() < self.epsilon:
@@ -171,9 +178,13 @@ class Agent:
         
         # add the experience in the experience lists
         self.state_list.append(state)
+        self.player_list.append(player)
         self.reward_list.append(self.board.reward())
         self.not_terminal_list.append(self.board.not_terminal_int())
-        self.successor_state_list.append(self.board.bit_board_representation())
+
+        succ_state, succ_players = self.board.bit_board_representation()
+        self.succ_state_list.append(succ_state)
+        self.succ_player_list.append(succ_players)
     
 
     def td_update(self):
@@ -187,13 +198,14 @@ class Agent:
             return
         
         # get the random batch
-        states, eligibilities = self.experience_buffer.randomBatch(self.batch_size)
+        states, players, eligibilities = self.experience_buffer.random_batch(self.batch_size)
         states = states.to(Globals.device)
+        players = players.to(Globals.device)
         eligibilities = eligibilities.to(Globals.device)
                     
                     
         # execute the training step of the network
-        self.network.train_step(states, eligibilities)   # the eligibility trace is used a td target
+        self.network.train_step(states, players, eligibilities)   # the eligibility trace is used a td target
         
 
     def update_eligibilities(self, lambda_param, disc):
@@ -227,9 +239,11 @@ class ExperienceBuffer:
                
         # define the experience buffer
         self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
+        self.player = torch.empty(max_size, 1)
         self.reward = -1*torch.ones(max_size, 1)
         self.not_terminal = torch.empty(max_size, 1)
         self.succ_state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
+        self.succ_player = torch.empty(max_size, 1)
         self.eligibility = torch.empty(max_size, 1)
         
         self.size = 0                       # size of the buffer
@@ -237,13 +251,15 @@ class ExperienceBuffer:
 
             
 
-    def add_batch(self, states, rewards, not_terminals, succ_states, eligibilities):
+    def add_batch(self, states, players, rewards, not_terminals, succ_states, succ_players, eligibilities):
         """
         adds multiple experiences to the buffer
         :param states:          the states s_t
+        :param players:         the players who's move it is in state s
         :param rewards:         the observed rewards
         :param not_terminals:   0 if the game is finished, 1 if it is not finished
         :param succ_states:     the states after the action was executed, s_t+1
+        :param players:         the players who's move it is in state s_t+1
         :param eligibilities:   the eligibility traces
         :return:
         """
@@ -259,24 +275,30 @@ class ExperienceBuffer:
             
             # add all elements until the end of the ring buffer array
             self.add_batch(states[0:batch_end_index, :],
+                           players[0:batch_end_index],
                            rewards[0:batch_end_index],
                            not_terminals[0:batch_end_index],
                            succ_states[0:batch_end_index, :],
+                           succ_players[0:batch_end_index],
                            eligibilities[0:batch_end_index])
             
             # add the rest of the elements at the beginning of the buffer
             self.add_batch(states[batch_end_index:, :],
+                           players[batch_end_index:],
                            rewards[batch_end_index:],
                            not_terminals[batch_end_index:],
                            succ_states[batch_end_index:, :],
+                           succ_players[batch_end_index:],
                            eligibilities[batch_end_index:])
             return
             
         # add the elements into the ring buffer    
         self.state[start_index:end_index, :] = states
+        self.player[start_index:end_index] = players
         self.reward[start_index:end_index] = rewards
         self.not_terminal[start_index:end_index] = not_terminals
         self.succ_state[start_index:end_index, :] = succ_states
+        self.succ_player[start_index:end_index] = succ_players
         self.eligibility[start_index:end_index] = eligibilities
           
         # update indices and size
@@ -303,7 +325,8 @@ class ExperienceBuffer:
             
             rewards = self.reward[start_index:end_index]
             succ_states = self.succ_state[start_index:end_index, :]
-            eligibilities = self.calc_eligibility(net, rewards, succ_states, lambda_param, disc)
+            succ_players = self.succ_player[start_index:end_index]
+            eligibilities = self.calc_eligibility(net, rewards, succ_states, succ_players, lambda_param, disc)
             self.eligibility[start_index:end_index] = eligibilities
             
         # last experience can continue at the beginning of the array
@@ -315,24 +338,26 @@ class ExperienceBuffer:
             
             rewards = torch.cat((self.reward[first_start_index:fist_end_index], self.reward[second_start_index:second_end_index]), 0)
             succ_states = torch.cat((self.succ_state[first_start_index:fist_end_index], self.succ_state[second_start_index:second_end_index]), 0)
-            eligibilities = self.calc_eligibility(net, rewards, succ_states, lambda_param, disc)
+            succ_players = torch.cat((self.succ_player[first_start_index:fist_end_index], self.succ_player[second_start_index:second_end_index]), 0)
+            eligibilities = self.calc_eligibility(net, rewards, succ_states, succ_players, lambda_param, disc)
             self.eligibility[first_start_index:fist_end_index] = eligibilities[0:fist_end_index-first_start_index]
             self.eligibility[second_start_index:second_end_index] = eligibilities[fist_end_index-first_start_index:eligibilities.shape[0]]
              
 
-    def calc_eligibility(self, net, rewards, succ_states, lambda_param, disc):
+    def calc_eligibility(self, net, rewards, succ_states, succ_players, lambda_param, disc):
         """
         calculates the eligibilities
         :param net:             the neural network
         :param rewards:         immediate rewards of the state transition
         :param succ_states:     the next state after the greedy move was played
+        :param succ_players:    the player who's move it is in the successor state
         :param lambda_param:    the lambda parameter for the TD(lambda)
         :param disc:            the discount factor
         :return:                the eligibilities
         """
 
         # calculate the values
-        values = net(succ_states)
+        values = net(succ_states, succ_players)
         
         # calculate all the eligibilities recursively
         exp_size = rewards.shape[0]
@@ -344,14 +369,13 @@ class ExperienceBuffer:
         
         return torch.Tensor(eligibility).unsqueeze(1)  
 
-            
 
-    def randomBatch(self, batchSize):
+    def random_batch(self, batch_size):
         """
         returns a random batch of the experience buffer
         :param batch_size:      the size of the batch
-        :return:                states, eligibilities
+        :return:                states, players, eligibilities
         """
-        sampleSize = batchSize if self.size > batchSize else self.size
-        idx = np.random.choice(self.size, sampleSize, replace=False)
-        return self.state[idx, :], self.eligibility[idx, :]
+        sample_size = batch_size if self.size > batch_size else self.size
+        idx = np.random.choice(self.size, sample_size, replace=False)
+        return self.state[idx, :], self.player[idx, :], self.eligibility[idx, :]

@@ -5,10 +5,10 @@ class CONST:
 	WHITE = 1			# white disk (cross, x)
 	BLACK = 2 			# black disk (circle, o)
 
-	NN_INPUT_SIZE = 27  # size of the neural network input
+	NN_INPUT_SIZE = 18  # size of the neural network input
 
-	WHITE_MOVE_VEC = np.zeros((3, 3)) 	# plane if it is white'S move
-	BLACK_MOVE_VEC = np.ones((3, 3)) 	# plane if it is black'S move
+	WHITE_MOVE = 0		# white's move constant
+	BLACK_MOVE = 1 		# black's move constant
 
 
 class Globals:

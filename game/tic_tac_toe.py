@@ -90,9 +90,10 @@ class BitBoard:
 
         white_board = self.int_to_board(self.white_player)
         black_board = self.int_to_board(self.black_player)
-        color_board = CONST.WHITE_MOVE_VEC if self.player == CONST.WHITE else CONST.BLACK_MOVE_VEC
-        bit_boards = np.stack((white_board, black_board, color_board), axis=0)
-        return bit_boards.reshape((1, CONST.NN_INPUT_SIZE))
+        bit_board = np.stack((white_board, black_board), axis=0)
+        player = CONST.WHITE_MOVE if self.player == CONST.WHITE else CONST.BLACK_MOVE
+        bit_board = bit_board.reshape((1, CONST.NN_INPUT_SIZE))
+        return bit_board, player
     
 
     def int_to_board(self, number):
@@ -258,6 +259,7 @@ class BitBoard:
         """
         returns all after states (board positions after all legal moves were played)
         :return:  nxnn_input_size matrix where n is the number of legal moves and nn_input_size the bit board representation
+                  player vector, 1: if it is whites move, 0 if it is blacks move
         """
 
         legal_move_count = len(self.legal_moves)
@@ -265,6 +267,7 @@ class BitBoard:
             return None
         
         after_states = np.empty((legal_move_count, CONST.NN_INPUT_SIZE))
+        player = np.empty((legal_move_count, 1))
         for i, move in enumerate(self.legal_moves):
             # create a board with the next move played
             if self.player == CONST.WHITE:
@@ -277,11 +280,11 @@ class BitBoard:
             # create the bit board
             white_board = self.int_to_board(white_player)
             black_board = self.int_to_board(black_player)
-            color_board = CONST.WHITE_MOVE_VEC if self.player == CONST.BLACK else CONST.BLACK_MOVE_VEC
-            bit_board = np.stack((white_board, black_board, color_board), axis=0).reshape((1, CONST.NN_INPUT_SIZE))
+            bit_board = np.stack((white_board, black_board), axis=0).reshape((1, CONST.NN_INPUT_SIZE))
             after_states[i, :] = bit_board
+            player[i, 0] = CONST.WHITE_MOVE if self.player == CONST.BLACK else CONST.BLACK_MOVE
         
-        return after_states
+        return after_states, player
         
 
     def greedy_move(self, net):
@@ -295,9 +298,10 @@ class BitBoard:
                         - the best value
         """
 
-        after_states = self.all_after_states()
+        after_states, players = self.all_after_states()
         after_states = torch.Tensor(after_states).to(Globals.device)
-        values = net(after_states)
+        players = torch.Tensor(players).to(Globals.device)
+        values = net(after_states, players)
         
         # pick the maximal value move for white and the minimal value move for black
         if self.player == CONST.WHITE:

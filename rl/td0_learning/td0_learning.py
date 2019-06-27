@@ -15,9 +15,9 @@ class Network(nn.Module):
     def __init__(self, learning_rate):
         super(Network, self).__init__()
                 
-        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 81)    # first fully connected layer
-        self.fc2 = nn.Linear(81, 36)                     # second fully connected layer
-        self.fc3 = nn.Linear(36, 9)
+        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 54)    # first fully connected layer
+        self.fc2 = nn.Linear(54, 27)                     # second fully connected layer
+        self.fc3 = nn.Linear(28, 9)                      # add what player is about to move to this feature vector
         self.fc4 = nn.Linear(9, 1)                       # approximation for the value function V(s)
 
         self.optimizer = optim.SGD(self.parameters(), lr=learning_rate)
@@ -31,7 +31,7 @@ class Network(nn.Module):
         nn.init.normal_(self.fc4.weight, mean=mean, std=std)
          
         
-    def forward(self, x):            
+    def forward(self, x, players):
         # fc layer 1
         x = self.fc1(x)             
         x = F.relu(x)
@@ -41,7 +41,9 @@ class Network(nn.Module):
         x = F.relu(x)
         
         # fc layer 3
+        x = torch.cat((x, players), dim=1)
         x = self.fc3(x)
+        x = F.relu(x)
         
         # fc layer 4
         x = self.fc4(x)
@@ -50,10 +52,11 @@ class Network(nn.Module):
         return x
 
 
-    def train_step(self, batch, target):
+    def train_step(self, batch, player, target):
         """
         executes one training step of the neural network
         :param batch:   tensor with data [batchSize, nn_input_size]
+        :param player:  the player who's move it is
         :param target:  tensor with the true v-value estimated by the Bellmann equation
         :return:        the loss
         """
@@ -62,21 +65,21 @@ class Network(nn.Module):
          
         # send the tensors to the used device
         data = batch.to(Globals.device)
+        player = player.to(Globals.device)
         label = target.to(Globals.device)
          
-        self.optimizer.zero_grad()   # reset the gradients to zero in every epoch
-        prediction = self(data)      # pass the data through the network
-        criterion = nn.MSELoss()     # use the log-likelihood loss
+        self.optimizer.zero_grad()          # reset the gradients to zero in every epoch
+        prediction = self(data, player)     # pass the data through the network
+        criterion = nn.MSELoss()            # use the log-likelihood loss
          
         # define the loss
         loss = criterion(prediction, label)
-        loss.backward()              # back propagation
-        self.optimizer.step()        # make one optimization step
+        loss.backward()                     # back propagation
+        self.optimizer.step()               # make one optimization step
         return loss
 
 
 class Agent:
-
     def __init__(self, learning_rate, epsilon, disc, batch_size, exp_buffer_size):
         """
         :param learning_rate:    learning rate for the neural network
@@ -116,7 +119,7 @@ class Agent:
         """
 
         # get the current state
-        state = self.board.bit_board_representation()
+        state, player = self.board.bit_board_representation()
         
         # choose the move to play
         is_exploring_move = False
@@ -135,8 +138,8 @@ class Agent:
         if not is_exploring_move:
             reward = self.board.reward()
             not_terminal = self.board.not_terminal_int()
-            successor_state = self.board.bit_board_representation()
-            self.experience_buffer.add(state, reward, not_terminal, successor_state)
+            succ_state, succ_player = self.board.bit_board_representation()
+            self.experience_buffer.add(state, player, reward, not_terminal, succ_state, succ_player)
     
 
     def td_update(self):
@@ -150,19 +153,20 @@ class Agent:
             return
         
         # get the random batch
-        states, rewards, not_terminals, succ_states = self.experience_buffer.random_batch(self.batch_size)
+        states, players, rewards, not_terminals, succ_states, succ_players = self.experience_buffer.random_batch(self.batch_size)
         states = states.to(Globals.device)
+        players = players.to(Globals.device)
         rewards = rewards.to(Globals.device)
         not_terminals = not_terminals.to(Globals.device)
         succ_states = succ_states.to(Globals.device)
+        succ_players = succ_players.to(Globals.device)
         
         # prepare the training data
-        values = self.target_network(succ_states)
+        values = self.target_network(succ_states, succ_players)
         td_target = rewards + self.disc*not_terminals*values
-                    
-                    
+
         # execute the training step of the network
-        self.training_network.train_step(states, td_target)
+        self.training_network.train_step(states, players, td_target)
         
 
     def sync_networks(self):
@@ -187,28 +191,34 @@ class ExperienceBuffer:
                
         # define the experience buffer
         self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
+        self.player = torch.empty(max_size, 1)
         self.reward = torch.empty(max_size, 1)
         self.not_terminal = torch.empty(max_size, 1)
         self.succ_state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
+        self.succ_player = torch.empty(max_size, 1)
         
         self.size = 0                  # size of the buffer
         self.ring_index = 0            # current index of where the next sample is added
         
 
-    def add(self, state, reward, not_terminal, succ_state):
+    def add(self, state, player, reward, not_terminal, succ_state, succ_player):
         """
         adds the passed experience to the buffer
         :param state:           the state s_t
+        :param player:          the player who'S move it is
         :param reward:          the observed reward
         :param not_terminal:    0 if the game is finished, 1 if it is not finished
         :param succ_state:      the state after the action was executed, s_t+1
+        :param succ_player:     the player who'S move it is in the successor state s_t+1
         :return:
         """
 
         self.state[self.ring_index, :] = torch.Tensor(state)
+        self.player[self.ring_index] = player
         self.reward[self.ring_index] = reward
         self.not_terminal[self.ring_index] = not_terminal
         self.succ_state[self.ring_index, :] = torch.Tensor(succ_state)
+        self.succ_player[self.ring_index] = succ_player
         
         # update indices and size
         self.ring_index += 1
@@ -222,9 +232,9 @@ class ExperienceBuffer:
         """
         returns a random batch of the experience buffer
         :param batch_size:   the size of the batch
-        :return:             state, reward, not_terminal, succ_state
+        :return:             state, player, reward, not_terminal, succ_state, succ_player
         """
 
         sample_size = batch_size if self.size > batch_size else self.size
         idx = np.random.choice(self.size, sample_size, replace=False)
-        return self.state[idx, :], self.reward[idx], self.not_terminal[idx], self.succ_state[idx, :]
+        return self.state[idx, :], self.player[idx], self.reward[idx], self.not_terminal[idx], self.succ_state[idx, :], self.succ_player[idx]

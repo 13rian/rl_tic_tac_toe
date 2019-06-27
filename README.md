@@ -22,7 +22,7 @@ Since Tic Tac Toe is a zero sum game with perfect information it is possible to 
 q(s,a) = argmax V(succ(s,a)) for white
 q(s,a) = argmin V(succ(s,a)) for black
 
-The value function V is approximated by a neural network which takes the board configuration as input. The board is represented by a vector of size 27. The first 9 elements are the white pieces, the next 9 elements are the black pieces and the last 9 elements are all 0's if it is white's move and all 1's if it is black's move. The neural network has only a single number V(s_t) between -1 and 1 as output that tells us how good it is to be in the current position. 1 means that white is winning and -1 means that black is winning. A value of 0 means that the position is estimated as equal. 
+The value function V is approximated by a neural network which takes the board configuration as input. The board is represented by a vector of size 18. The first 9 elements are the white pieces and the second 9 elements are the black pieces. The player that is about to move is a feature that was added in the third layer of the neural network. The feature is 0 if it is white's move and 1 if it is black's move. The neural network has only a single number V(s_t) between -1 and 1 as output that tells us how good it is to be in the current position. 1 means that white is winning and -1 means that black is winning. A value of 0 means that the position is estimated as equal. 
 
 ### TD(0) Learning
 - Training of a neural network with correlated data tends to be unstable. Additionally, as the agent is learning his policy changes as well. The target to learn is therefore not stationary and convergence is not guaranteed. For this reasons the following stabilization strategies were chosen:
