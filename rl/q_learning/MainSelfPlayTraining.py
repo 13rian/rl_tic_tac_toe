@@ -8,7 +8,7 @@ from utils import utils
 
 from game.globals import CONST
 from game.globals import Globals
-import dqn_lambda_learning
+import q_learning
 
 
 # The logger
@@ -21,23 +21,23 @@ random.seed(a=None, version=2)
 
 
 # start to train the neural network
-epoch_count = 1000        # the number of epochs to train the neural network 1000 ~ 100'000 episodes ~ 25min
-episode_count = 100       # the number of games that are self-played in one epoch
-test_interval = 10        # epoch intervals at which the network plays against a random player
-test_game_count = 1000    # the number of games that are played in the test against the random opponent
-epsilon = 0.1             # the exploration constant
-lambda_param = 0.6        # the lambda parameter in TD(lambda)
-disc = 0.9                # the discount factor
-learning_rate = 0.01      # the learning rate of the neural network
-batch_size = 32           # the batch size of the experience buffer for the neural network training
-exp_buffer_size = 10000   # the size of the experience replay buffer
+epoch_count = 1000              # the number of epochs to train the neural network 100'000 episodes ~ 1h
+episode_count = 100             # the number of games that are self-played in one epoch
+update_count = 9*episode_count  # the number the neural net is updated  in one epoch with the experience data
+test_interval = 10              # epoch intervals at which the network plays against a random player
+test_game_count = 1000          # the number of games that are played in the test against the random opponent
+epsilon = 0.1                   # the exploration constant
+disc = 0.9                      # the discount factor
+learning_rate = 0.01            # the learning rate of the neural network
+batch_size = 32                 # the batch size of the experience buffer for the neural network training
+exp_buffer_size = 10000         # the size of the experience replay buffer
 
 # define the devices for the training and the target networks     cpu or cuda, here cpu is way faster for small nets
 Globals.device = torch.device('cpu')
 
 
 # create the agent
-agent = dqn_lambda_learning.Agent(learning_rate, epsilon, disc, lambda_param, batch_size, exp_buffer_size)
+agent = q_learning.Agent(learning_rate, epsilon, disc, batch_size, exp_buffer_size)
 
 
 # to plot the fitness
@@ -70,14 +70,17 @@ for i in range(epoch_count):
         # play one self-game
         agent.play_self_play_game()
 
-        # update the neural network
+
+
+    ###### training, train the training network and use the target network for predictions
+    # logger.info("start updates in epoch {}".format(i))
+    for _ in range(update_count):
         agent.q_update()
                 
-    
-    
-    ###### refresh the eligibility traces
-    # logger.info("sync neural networks in epoch {}".format(i)) 
-    agent.update_eligibilities(lambda_param, disc)
+
+    ###### synchronize the target network with the training network
+    # logger.info("sync neural networks in epoch {}".format(i))
+    agent.sync_networks()
 
 
 end_training = time.time()

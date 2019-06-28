@@ -193,7 +193,7 @@ class Agent:
         self.legal_moves_list.append(self.board.legal_moves)
     
 
-    def td_update(self):
+    def q_update(self):
         """
         updates the training neural network by using a random batch from the experience replay
         :return:
