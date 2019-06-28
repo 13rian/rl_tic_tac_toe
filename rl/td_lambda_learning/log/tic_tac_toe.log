@@ -1635,3 +1635,95 @@
 2019-06-27 21:11:33.753 - matplotlib.axes._base(2515) - [DEBUG  ] - update_title_pos
 2019-06-27 21:11:33.800 - matplotlib.axes._base(2515) - [DEBUG  ] - update_title_pos
 2019-06-27 21:12:00.775 - matplotlib.axes._base(2515) - [DEBUG  ] - update_title_pos
+2019-06-28 11:20:03.345 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-06-28 11:20:03.346 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-06-28 11:21:22.068 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-06-28 11:21:22.070 - TicTacToeTrain (56  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-06-28 11:21:54.826 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-06-28 11:21:54.827 - TicTacToeTrain (56  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-06-28 11:23:18.634 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-06-28 11:23:18.635 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-06-28 11:23:20.137 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 0 epochs: 0.6575
+2019-06-28 11:23:21.340 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 0 epochs: 0.297
+2019-06-28 11:23:51.010 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-06-28 11:23:51.011 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-06-28 11:23:52.443 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 0 epochs: 0.69
+2019-06-28 11:23:53.630 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 0 epochs: 0.524
+2019-06-28 11:24:02.783 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 10
+2019-06-28 11:24:04.298 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 10 epochs: 0.6725
+2019-06-28 11:24:05.534 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 10 epochs: 0.5285
+2019-06-28 11:24:18.845 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 20
+2019-06-28 11:24:20.404 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 20 epochs: 0.673
+2019-06-28 11:24:21.663 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 20 epochs: 0.368
+2019-06-28 11:24:35.252 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 30
+2019-06-28 11:24:36.817 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 30 epochs: 0.639
+2019-06-28 11:24:38.089 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 30 epochs: 0.3585
+2019-06-28 11:24:51.646 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 40
+2019-06-28 11:24:53.222 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 40 epochs: 0.6835
+2019-06-28 11:24:54.489 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 40 epochs: 0.3765
+2019-06-28 11:25:08.063 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 50
+2019-06-28 11:25:09.640 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 50 epochs: 0.7245
+2019-06-28 11:25:10.916 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 50 epochs: 0.388
+2019-06-28 11:25:24.234 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 60
+2019-06-28 11:25:25.774 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 60 epochs: 0.7325
+2019-06-28 11:25:27.053 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 60 epochs: 0.425
+2019-06-28 11:25:40.353 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 70
+2019-06-28 11:25:41.895 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 70 epochs: 0.642
+2019-06-28 11:25:43.138 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 70 epochs: 0.442
+2019-06-28 11:25:56.894 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 80
+2019-06-28 11:25:58.373 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 80 epochs: 0.736
+2019-06-28 11:25:59.636 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 80 epochs: 0.47
+2019-06-28 11:26:13.109 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 90
+2019-06-28 11:26:14.570 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 90 epochs: 0.783
+2019-06-28 11:26:15.851 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 90 epochs: 0.553
+2019-06-28 11:26:29.591 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 100
+2019-06-28 11:26:31.066 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 100 epochs: 0.804
+2019-06-28 11:26:32.307 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 100 epochs: 0.4825
+2019-06-28 11:26:45.736 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 110
+2019-06-28 11:26:47.142 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 110 epochs: 0.8685
+2019-06-28 11:26:48.396 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 110 epochs: 0.5005
+2019-06-28 11:27:01.893 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 120
+2019-06-28 11:27:03.282 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 120 epochs: 0.8855
+2019-06-28 11:27:04.529 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 120 epochs: 0.49
+2019-06-28 11:27:18.168 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 130
+2019-06-28 11:27:19.551 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 130 epochs: 0.8535
+2019-06-28 11:27:20.834 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 130 epochs: 0.493
+2019-06-28 11:27:34.057 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 140
+2019-06-28 11:27:35.379 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 140 epochs: 0.9005
+2019-06-28 11:27:36.620 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 140 epochs: 0.586
+2019-06-28 11:27:50.283 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 150
+2019-06-28 11:27:51.617 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 150 epochs: 0.8535
+2019-06-28 11:27:52.861 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 150 epochs: 0.562
+2019-06-28 11:28:06.533 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 160
+2019-06-28 11:28:07.914 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 160 epochs: 0.775
+2019-06-28 11:28:09.156 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 160 epochs: 0.567
+2019-06-28 11:28:22.756 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 170
+2019-06-28 11:28:24.248 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 170 epochs: 0.7125
+2019-06-28 11:28:25.496 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 170 epochs: 0.5575
+2019-06-28 11:28:38.999 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 180
+2019-06-28 11:28:40.465 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 180 epochs: 0.7875
+2019-06-28 11:28:41.719 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 180 epochs: 0.4245
+2019-06-28 11:28:55.173 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 190
+2019-06-28 11:28:56.660 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 190 epochs: 0.7805
+2019-06-28 11:28:57.928 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 190 epochs: 0.5585
+2019-06-28 11:29:11.657 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 200
+2019-06-28 11:29:13.136 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 200 epochs: 0.802
+2019-06-28 11:29:14.383 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 200 epochs: 0.523
+2019-06-28 11:29:27.953 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 210
+2019-06-28 11:29:29.458 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 210 epochs: 0.758
+2019-06-28 11:29:30.749 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 210 epochs: 0.576
+2019-06-28 11:29:44.395 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 220
+2019-06-28 11:29:45.950 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 220 epochs: 0.769
+2019-06-28 11:29:47.235 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 220 epochs: 0.564
+2019-06-28 11:30:00.555 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 230
+2019-06-28 11:30:02.113 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 230 epochs: 0.7355
+2019-06-28 11:30:03.422 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 230 epochs: 0.4895
+2019-06-28 11:30:16.805 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 240
+2019-06-28 11:30:18.365 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 240 epochs: 0.7705
+2019-06-28 11:30:19.678 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 240 epochs: 0.4795
+2019-06-28 11:30:33.102 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 250
+2019-06-28 11:30:34.663 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 250 epochs: 0.79
+2019-06-28 11:30:35.974 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 250 epochs: 0.4675
+2019-06-28 11:30:49.464 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 260
+2019-06-28 11:30:51.020 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 260 epochs: 0.786
+2019-06-28 11:30:52.303 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 260 epochs: 0.4885

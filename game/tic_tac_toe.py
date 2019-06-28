@@ -6,7 +6,7 @@ import torch
 from utils import utils
 from game.globals import CONST
 from game.globals import Globals
-       
+
 
 class BitBoard:
     """
@@ -240,8 +240,7 @@ class BitBoard:
        
     #################################################################################################
     #                               network training methods                                        #
-    #################################################################################################   
-
+    #################################################################################################
     def reward(self):
         """
         :return:    -1 if black has won
@@ -287,7 +286,7 @@ class BitBoard:
         return after_states, player
         
 
-    def greedy_move(self, net):
+    def greedy_value_move(self, net):
         """
         returns the legal move with the highest action value. The ides is that q(s,a) = argmax v(s')
         where s' is the after state (state after the move was played)
@@ -311,52 +310,110 @@ class BitBoard:
         
         greedy_move = self.legal_moves[index]
         return greedy_move, value
-    
-    
 
-    #################################################################################################
-    #                                       test methods                                            #
-    #################################################################################################
 
-    def play_against_random(self, net, network_color, game_count):
+
+    def greedy_action_move(self, net):
         """
-        let the network play against an opponent that just makes random moves
-        :param net:             the trained network
-        :param networkColor:    the color of the network
-        :param game_count:      the number of games to play
-        :return:                the fraction of point the network got against a random player
+        returns the legal move with the highest action value max Q(s, a)
+        Both players will make an optimal move according to the maximal action value defined by the
+        approximated action value function
+        :param net:     the network that approximates the action value function
+        :return:        - the best move according to the networks action value function
+                        - the best action value
         """
 
-        score = 0
-        for _ in range(game_count):
-            board = BitBoard()
-            while not board.terminal:
-                if board.player == network_color:
-                    greedy_move, _ = board.greedy_move(net)
-                    board.play_move(greedy_move)
-                else:
-                    move = board.random_move()
-                    board.play_move(move)
-                    
-                # board.print()
+        state, _ = self.bit_board_representation()
+        state = torch.Tensor(state).to(Globals.device)
+        q_values = net(state)
 
-            network_score = board.reward() if network_color == CONST.WHITE else -board.reward()
-            network_score = (network_score + 1) / 2
-            score += network_score
-        
-        return score / game_count
+        # pick the move with the maximal action value for white and the minimal action value for black
+        if self.player == CONST.WHITE:
+            legal_q_values = q_values[0, 0:9][self.legal_moves]
+            value, index = legal_q_values.max(0)
+        else:
+            legal_q_values = q_values[0, 9:18][self.legal_moves]
+            value, index = legal_q_values.min(0)
+
+        greedy_move = self.legal_moves[index]
+        return greedy_move, value
     
 
-    def play_random_vs_random(self, game_count):
-        score_white = 0
-        for _ in range(game_count):
-            board = BitBoard()
-            while not board.terminal:
+
+
+
+#################################################################################################
+#                                       test methods                                            #
+#################################################################################################
+
+def v_net_against_random(net, network_color, game_count):
+    """
+    let the network that approximates the value function V play against an opponent that just makes random moves
+    :param net:             the trained network
+    :param network_color:   the color of the network
+    :param game_count:      the number of games to play
+    :return:                the fraction of point the network got against a random player
+    """
+
+    score = 0
+    for _ in range(game_count):
+        board = BitBoard()
+        while not board.terminal:
+            if board.player == network_color:
+                greedy_move, _ = board.greedy_value_move(net)
+                board.play_move(greedy_move)
+            else:
                 move = board.random_move()
                 board.play_move(move)
-        
-            score = board.reward()
-            score = (score + 1) / 2
-            score_white += score
-        
-        return score_white / game_count
+
+            # board.print()
+
+        network_score = board.reward() if network_color == CONST.WHITE else -board.reward()
+        network_score = (network_score + 1) / 2
+        score += network_score
+
+    return score / game_count
+
+
+def q_net_against_random(net, network_color, game_count):
+    """
+    let the network that approximates the action value function Q play against an opponent that just makes random moves
+    :param net:             the trained network
+    :param network_color:   the color of the network
+    :param game_count:      the number of games to play
+    :return:                the fraction of point the network got against a random player
+    """
+
+    score = 0
+    for _ in range(game_count):
+        board = BitBoard()
+        while not board.terminal:
+            if board.player == network_color:
+                greedy_move, _ = board.greedy_action_move(net)
+                board.play_move(greedy_move)
+            else:
+                move = board.random_move()
+                board.play_move(move)
+
+            # board.print()
+
+        network_score = board.reward() if network_color == CONST.WHITE else -board.reward()
+        network_score = (network_score + 1) / 2
+        score += network_score
+
+    return score / game_count
+
+
+def play_random_vs_random(game_count):
+    score_white = 0
+    for _ in range(game_count):
+        board = BitBoard()
+        while not board.terminal:
+            move = board.random_move()
+            board.play_move(move)
+
+        score = board.reward()
+        score = (score + 1) / 2
+        score_white += score
+
+    return score_white / game_count

@@ -129,7 +129,7 @@ class Agent:
             is_exploring_move = True
         else:
             # exploitation
-            action, _ = self.board.greedy_move(self.target_network)
+            action, _ = self.board.greedy_value_move(self.target_network)
         
         # play the epsilon greedy move
         self.board.play_move(action)
@@ -180,8 +180,8 @@ class Agent:
         :param game_count:  the number of games that are played
         :return:            the mean score against the random player 0: lose, 0.5 draw, 1: win
         """
-        board = tic_tac_toe.BitBoard()
-        score = board.play_against_random(self.training_network, color, game_count)
+
+        score = tic_tac_toe.v_net_against_random(self.training_network, color, game_count)
         return score
 
 

@@ -1498,3 +1498,13 @@
 2019-06-27 19:27:34.509 - TD0_Training   (56  ) - [INFO   ] - start evaluating the network in epoch 10
 2019-06-27 19:27:35.886 - TD0_Training   (58  ) - [INFO   ] - white score rate after 10 epochs: 0.8
 2019-06-27 19:27:37.110 - TD0_Training   (61  ) - [INFO   ] - black score rate after 10 epochs: 0.441
+2019-06-28 11:31:07.715 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-06-28 11:31:07.717 - TD0_Training   (56  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-06-28 11:31:36.887 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-06-28 11:31:36.889 - TD0_Training   (56  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-06-28 11:31:38.434 - TD0_Training   (58  ) - [INFO   ] - white score rate after 0 epochs: 0.5775
+2019-06-28 11:31:39.633 - TD0_Training   (61  ) - [INFO   ] - black score rate after 0 epochs: 0.1815
+2019-06-28 11:31:56.622 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-06-28 11:31:56.624 - TD0_Training   (56  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-06-28 11:31:58.057 - TD0_Training   (58  ) - [INFO   ] - white score rate after 0 epochs: 0.62
+2019-06-28 11:31:59.288 - TD0_Training   (61  ) - [INFO   ] - black score rate after 0 epochs: 0.2915
