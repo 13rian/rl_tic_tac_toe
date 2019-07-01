@@ -33,7 +33,7 @@ batch_size = 32                 # the batch size of the experience buffer for th
 exp_buffer_size = 10000         # the size of the experience replay buffer
 
 # define the devices for the training and the target networks     cpu or cuda, here cpu is way faster for small nets
-Globals.device = torch.device('cuda')
+Globals.device = torch.device('cpu')
 
 
 # create the agent
@@ -44,15 +44,6 @@ agent = q_learning.Agent(learning_rate, epsilon, disc, batch_size, exp_buffer_si
 episodes = []
 fitness_white = []
 fitness_black = []
-
-
-
-
-@utils.profile
-def update():
-    logger.debug("start update")
-
-    logger.debug("end update")
 
 
 start_training = time.time()

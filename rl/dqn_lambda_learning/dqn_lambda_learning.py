@@ -369,6 +369,7 @@ class ExperienceBuffer:
         """
 
         # calculate the values
+        succ_states = succ_states.to(Globals.device)
         q_values = net(succ_states)
         
         # calculate all the eligibilities recursively

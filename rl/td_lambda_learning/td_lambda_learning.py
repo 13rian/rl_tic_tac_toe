@@ -353,8 +353,11 @@ class ExperienceBuffer:
         """
 
         # calculate the values
+        succ_states = succ_states.to(Globals.device)
+        succ_players = succ_players.to(Globals.device)
         values = net(succ_states, succ_players)
-        
+        values = values.cpu()
+
         # calculate all the eligibilities recursively
         exp_size = rewards.shape[0]
         eligibility = np.empty(exp_size)
