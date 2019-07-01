@@ -475,3 +475,32 @@
 2019-06-28 17:09:14.542 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 20
 2019-06-28 17:09:15.678 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 20 epochs: 0.491
 2019-06-28 17:09:16.542 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 20 epochs: 0.4295
+2019-07-01 09:51:24.847 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-07-01 09:51:24.848 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-07-01 09:51:26.042 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 0 epochs: 0.776
+2019-07-01 09:51:27.059 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 0 epochs: 0.5145
+2019-07-01 09:51:36.862 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 10
+2019-07-01 09:51:37.899 - TicTacToeTrain (57  ) - [INFO   ] - white score rate after 10 epochs: 0.887
+2019-07-01 09:51:38.847 - TicTacToeTrain (60  ) - [INFO   ] - black score rate after 10 epochs: 0.54
+2019-07-01 10:28:28.054 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-07-01 10:28:28.056 - TicTacToeTrain (58  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-07-01 10:28:29.656 - TicTacToeTrain (60  ) - [INFO   ] - white score rate after 0 epochs: 0.545
+2019-07-01 10:28:30.915 - TicTacToeTrain (63  ) - [INFO   ] - black score rate after 0 epochs: 0.252
+2019-07-01 10:29:44.761 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-07-01 10:29:44.763 - TicTacToeTrain (59  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-07-01 10:29:46.272 - TicTacToeTrain (61  ) - [INFO   ] - white score rate after 0 epochs: 0.7395
+2019-07-01 10:29:47.584 - TicTacToeTrain (64  ) - [INFO   ] - black score rate after 0 epochs: 0.3615
+2019-07-01 10:42:54.576 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-07-01 10:42:54.578 - TicTacToeTrain (59  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-07-01 10:42:56.024 - TicTacToeTrain (61  ) - [INFO   ] - white score rate after 0 epochs: 0.706
+2019-07-01 10:42:57.296 - TicTacToeTrain (64  ) - [INFO   ] - black score rate after 0 epochs: 0.296
+2019-07-01 10:43:32.993 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-07-01 10:43:32.995 - TicTacToeTrain (59  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-07-01 10:43:34.551 - TicTacToeTrain (61  ) - [INFO   ] - white score rate after 0 epochs: 0.6385
+2019-07-01 10:43:35.835 - TicTacToeTrain (64  ) - [INFO   ] - black score rate after 0 epochs: 0.465
+2019-07-01 10:43:47.204 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-07-01 10:43:47.206 - TicTacToeTrain (59  ) - [INFO   ] - start evaluating the network in epoch 0
+2019-07-01 10:43:48.582 - TicTacToeTrain (61  ) - [INFO   ] - white score rate after 0 epochs: 0.7875
+2019-07-01 10:43:49.843 - TicTacToeTrain (64  ) - [INFO   ] - black score rate after 0 epochs: 0.4095
+2019-07-01 10:46:20.976 - root           (46  ) - [DEBUG  ] - logger successfully initialized
+2019-07-01 10:46:20.978 - TicTacToeTrain (55  ) - [INFO   ] - start evaluating the network in epoch 0

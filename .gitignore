@@ -1,4 +1,5 @@
 .idea
 *.pt
 /log
+log/
 __pycache__/

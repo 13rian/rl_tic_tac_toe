@@ -21,7 +21,7 @@ random.seed(a=None, version=2)
 
 
 # start to train the neural network
-epoch_count = 1000              # the number of epochs to train the neural network 100'000 episodes ~ 1h
+epoch_count = 400               # the number of epochs to train the neural network 100'000 episodes ~ 1h
 episode_count = 100             # the number of games that are self-played in one epoch
 update_count = 9*episode_count  # the number the neural net is updated  in one epoch with the experience data
 test_interval = 10              # epoch intervals at which the network plays against a random player
@@ -33,7 +33,7 @@ batch_size = 32                 # the batch size of the experience buffer for th
 exp_buffer_size = 10000         # the size of the experience replay buffer
 
 # define the devices for the training and the target networks     cpu or cuda, here cpu is way faster for small nets
-Globals.device = torch.device('cpu')
+Globals.device = torch.device('cuda')
 
 
 # create the agent
@@ -44,6 +44,15 @@ agent = q_learning.Agent(learning_rate, epsilon, disc, batch_size, exp_buffer_si
 episodes = []
 fitness_white = []
 fitness_black = []
+
+
+
+
+@utils.profile
+def update():
+    logger.debug("start update")
+
+    logger.debug("end update")
 
 
 start_training = time.time()

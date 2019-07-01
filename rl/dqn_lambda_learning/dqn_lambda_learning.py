@@ -71,9 +71,9 @@ class Network(nn.Module):
 
         # create the label
         label = prediction.clone()
-        target = target.squeeze(1)
+        target = target.to(Globals.device).squeeze(1)
         label[np.arange(0, batch.shape[0]), action_index.squeeze(1)] = target     # only replace the target values of the executed action
-        criterion = nn.MSELoss()            # use the log-likelihood loss
+        criterion = nn.MSELoss()
          
         # define the loss
         loss = criterion(prediction, label)

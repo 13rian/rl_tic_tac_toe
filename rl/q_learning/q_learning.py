@@ -53,12 +53,6 @@ class Network(nn.Module):
         return x
 
 
-
-
-
-
-
-
     def train_step(self, batch, target, action_index):
         """
         executes one training step of the neural network
@@ -73,19 +67,19 @@ class Network(nn.Module):
         # send the tensors to the used device
         data = batch.to(Globals.device)
 
-        self.optimizer.zero_grad()  # reset the gradients to zero in every epoch
-        prediction = self(data)  # pass the data through the network to get the prediction
+        self.optimizer.zero_grad()          # reset the gradients to zero in every epoch
+        prediction = self(data)             # pass the data through the network to get the prediction
 
         # create the label
         label = prediction.clone()
-        target = target.squeeze(1)
+        target = target.to(Globals.device).squeeze(1)
         label[np.arange(0, batch.shape[0]), action_index.squeeze(1)] = target  # only replace the target values of the executed action
-        criterion = nn.MSELoss()  # use the log-likelihood loss
+        criterion = nn.MSELoss()
 
         # define the loss
         loss = criterion(prediction, label)
-        loss.backward()  # back propagation
-        self.optimizer.step()  # make one optimization step
+        loss.backward()         # back propagation
+        self.optimizer.step()   # make one optimization step
         return loss
 
 
@@ -169,7 +163,7 @@ class Agent:
             succ_state, succ_player = self.board.bit_board_representation()
             succ_legal_moves = self.board.legal_moves
             self.experience_buffer.add(state, action_index, reward, not_terminal, succ_state, succ_player, succ_legal_moves)
-    
+
 
     def q_update(self):
         """
