@@ -88,7 +88,7 @@ training_time = end_training - start_training
 logger.info("elapsed time whole training process {} for {} episodes".format(training_time, epoch_count*episode_count))
 
 # save the currently trained neural network
-torch.save(agent.network, "ticTacToeSelfPlay.pt")
+torch.save(agent.training_network, "ticTacToeSelfPlay.pt")
 
 
 # plot the results
