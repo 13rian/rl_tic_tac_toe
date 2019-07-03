@@ -31,6 +31,23 @@ class BitBoard:
         # calculate all legal moves and disks to flip
         self.__calc_legal_moves__()
         
+        
+    def clone(self):
+        """
+        returns a new board with the same state
+        :return:
+        """
+        board = BitBoard()
+        board.white_player = self.white_player
+        board.black_player = self.black_player
+        
+        board.player = self.player
+        board.terminal = self.terminal
+        board.score = self.score
+        board.legal_moves = self.legal_moves.copy()
+        
+        return board
+        
     
     #################################################################################################
     #                                 board representation                                          #
@@ -130,6 +147,14 @@ class BitBoard:
         board_mask = self.int_to_board(mask)
         return board_mask
     
+    
+    def state_number(self):
+        """
+        uses the cantor pairing function to create one unique number form the two integers representing the board state
+        the resulting integer is unique for every board position
+        """
+        state = 0.5*(self.white_player + self.black_player) * (self.white_player + self.black_player + 1) + self.black_player 
+        return int(state)
     
     
     
