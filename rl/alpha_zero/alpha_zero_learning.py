@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 
 import torch
@@ -8,6 +9,7 @@ import random
 
 from game import tic_tac_toe
 from game.globals import Globals, CONST
+from rl.alpha_zero.mcts import MCTS
 
 
 
@@ -100,52 +102,47 @@ class Network(nn.Module):
 
 
 class Agent:
-    def __init__(self, learning_rate, epsilon, disc, lambda_param, batch_size, exp_buffer_size):
+    def __init__(self, learning_rate, mcts_sim_count, c_puct, temp, batch_size, exp_buffer_size):
         """
         :param learning_rate:       learning rate for the neural network
-        :param epsilon:             defines the exploration rate
-        :param disc:                the discount factor
-        :param lambda_param:        the lambda parameter of TD(lambda)
+        :param mcts_sim_count:      the number of simulations for the monte-carlo tree search
+        :param c_puct:              the higher this constant the more the mcts explores
+        :param temp:                the temperature, controls the policy value distribution
         :param batch_size:          the experience buffer batch size to train the training network
         :param exp_buffer_size:     the size of the experience replay buffer
         """
 
         self.learningRate = learning_rate                            # learning rate for the stochastic gradient decent
-        self.epsilon = epsilon                                       # epsilon to choose the epsilon greedy move
-        self.disc = disc                                             # the discount factor for the td update
-        self.lambda_param = lambda_param                             # the lambda parameter of TD(lambda)
+        self.mcts_sim_count = mcts_sim_count                         # the number of simulations for the monte-carlo tree search
+        self.c_puct = c_puct                                         # the higher this constant the more the mcts explores
+        self.temp = temp                                             # the temperature, controls the policy value distribution
         self.batch_size = batch_size                                 # the size of the experience replay buffer
-        self.network = Network(learning_rate).to(Globals.device)     # the neural network to train
+        self.old_network = Network(learning_rate)                    # the network form the previous generation
+        self.new_network = copy.deepcopy(self.training_network)      # the most actual neural network
 
         self.board = tic_tac_toe.BitBoard()                          # tic tac toe board
         self.experience_buffer = ExperienceBuffer(exp_buffer_size)   # buffer that saves all experiences
+        
+        self.mcts = None
 
         # to save the experience of one episode
         self.state_list = []
-        self.action_index_list = []
-        self.reward_list = []
-        self.not_terminal_list = []
-        self.succ_state_list = []
-        self.succ_player_list = []
-        self.legal_moves_list = []
+        self.policy_list = []
+        self.value_list = []
+        
+        # send the network to the configured device
+        self.old_network.to(Globals.device)
+        self.new_network.to(Globals.device)
 
 
     def reset_game(self):
         self.board = tic_tac_toe.BitBoard()
+        self.mcts = MCTS(self.board, self.c_puct)
         
         # reset the experience lists
         self.state_list = []
-        self.action_index_list = []
-        self.reward_list = []
-        self.not_terminal_list = []
-        self.succ_state_list = []
-        self.succ_player_list = []
-        self.legal_moves_list = []
-
-        
-
-    def game_terminal(self):
-        return self.board.terminal
+        self.policy_list = []
+        self.value_list = []
     
 
     def play_self_play_game(self):
@@ -158,57 +155,33 @@ class Agent:
         self.reset_game()
         
         # play the epsilon greedy move and save the state transition in the experience lists      
-        while not self.game_terminal():
-            self.epsilon_greedy_move()
-        
-        # calculate the eligibilities recursively
-        state = torch.Tensor(self.state_list).reshape(-1, CONST.NN_INPUT_SIZE)
-        action_index = torch.Tensor(self.action_index_list).unsqueeze(1)
-        reward = torch.Tensor(self.reward_list).unsqueeze(1)
-        not_terminal = torch.Tensor(self.not_terminal_list).unsqueeze(1)
-        succ_state = torch.Tensor(self.succ_state_list).reshape(-1, CONST.NN_INPUT_SIZE)
-        succ_player = torch.Tensor(self.succ_player_list).unsqueeze(1)
-        eligibility = self.experience_buffer.calc_eligibility(self.network, reward, succ_state, succ_player, self.legal_moves_list, self.lambda_param, self.disc)
+        while not self.board.terminal:
+            state = self.board.to_feature_vector()
+            policy = self.mcts.policy_values(self.new_network, self.mcts_sim_count, self.temp)
             
-        # add all the experiences of the game to the experience buffer 
-        self.experience_buffer.add_batch(state, action_index, reward, not_terminal, succ_state, succ_player, self.legal_moves_list, eligibility)
+            # sample from the policy to determine the move to play
+            move = np.random.choice(len(policy), p=policy)
+            self.board.play_move(move)
+            
+            # save the training example
+            self.state_list.append(state)
+            self.policy_list.append(policy)
+        
+        # calculate the values from the perspective of the player who's move it is
+        reward = self.board.reward()
+        for state in self.state_list:
+            player = state[CONST.NN_INPUT_SIZE]
+            value = reward if player == CONST.WHITE_MOVE else -reward
+            self.value_list.append(value)
+  
+        # add the training examples to the experience buffer
+        state = torch.Tensor(self.state_list).reshape(-1, CONST.NN_INPUT_SIZE + 1)
+        policy = torch.Tensor(self.action_index_list).reshape(-1, CONST.NN_POLICY_SIZE)
+        value = torch.Tensor(self.reward_list).unsqueeze(1)
+             
+        self.experience_buffer.add_batch(state, policy, value)
             
 
-    def epsilon_greedy_move(self):
-        """
-        plays the epsilon greedy move and saves the experience in the experience buffer
-        :return:
-        """
-
-        # get the current state
-        state, _ = self.board.bit_board_representation()
-        
-        # choose the move to play
-        if random.random() < self.epsilon:
-            # exploration
-            action = self.board.random_move()
-        else:
-            # exploitation
-            action, _ = self.board.greedy_action_move(self.network)
-
-        action_index = action
-        if self.board.player == CONST.BLACK:
-            action_index = action + 9
-        
-        # play the epsilon greedy move
-        self.board.play_move(action)
-        
-        # add the experience in the experience lists
-        self.state_list.append(state)
-        self.action_index_list.append(action_index)
-        self.reward_list.append(self.board.reward())
-        self.not_terminal_list.append(self.board.not_terminal_int())
-
-        succ_state, succ_player = self.board.bit_board_representation()
-        self.succ_state_list.append(succ_state)
-        self.succ_player_list.append(succ_player)
-        self.legal_moves_list.append(self.board.legal_moves)
-    
 
     def q_update(self):
         """
@@ -228,18 +201,6 @@ class Agent:
 
         # execute the training step of the network
         self.network.train_step(states, eligibilities, action_indices)   # the eligibility trace is used as td target
-        
-
-    def update_eligibilities(self, lambda_param, disc):
-        """
-        refreshes the eligibilities in the experience buffer
-        :param lambda_param:    lambda parameter for TD(lambda)
-        :param disc:            the discount factor
-        :return:
-        """
-
-        self.experience_buffer.update_eligibilities(self.network, lambda_param, disc)
-    
             
 
     def play_against_random(self, color, game_count):
@@ -260,36 +221,25 @@ class ExperienceBuffer:
     def __init__(self, max_size):
         self.max_size = max_size
                
-        # define the experience buffer
-        self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
-        self.action_index = torch.empty([max_size, 1], dtype=torch.long)
-        self.reward = -1*torch.ones(max_size, 1)
-        self.not_terminal = torch.empty(max_size, 1)
-        self.succ_state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
-        self.succ_player = torch.empty(max_size, 1)
-        self.succ_legal_move = max_size*[None]
-        self.eligibility = torch.empty(max_size, 1)
+        self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE + 1)
+        self.policy = torch.empty(max_size, CONST.NN_POLICY_SIZE)
+        self.value = torch.empty(max_size, 1)
         
-        self.size = 0                       # size of the buffer
-        self.ring_index = 0                 # current index of where the next sample is added
-
-            
-
-    def add_batch(self, states, action_indices, rewards, not_terminals, succ_states, succ_players, succ_legal_moves, eligibilities):
+        self.size = 0                  # size of the buffer
+        self.ring_index = 0            # current index of where the next sample is added
+        
+        
+    def add_batch(self, states, policies, values):
         """
-        adds multiple experiences to the buffer
-        :param states:              the states s_t
-        :param action_indices:      the action index of the nn output that was chosen in state s
-        :param rewards:             the observed rewards
-        :param not_terminals:       0 if the game is finished, 1 if it is not finished
-        :param succ_states:         the state s_t+1 after the move was played
-        :param succ_players:        the player who's move it is in state s_t+1
-        :param succ_legal_moves:    all legal moves in the successor position
-        :param eligibilities:       the eligibility traces
+        adds the multiple experiences to the buffer
+        :param states:           the state s_t
+        :param policies:          probability value for all actions
+        :param values:           value of the current state
+        :return:
         :return:
         """
 
-        sample_count = not_terminals.shape[0]
+        sample_count = values.shape[0]
         start_index = self.ring_index
         end_index = self.ring_index + sample_count
         
@@ -300,34 +250,19 @@ class ExperienceBuffer:
             
             # add all elements until the end of the ring buffer array
             self.add_batch(states[0:batch_end_index, :],
-                           action_indices[0:batch_end_index],
-                           rewards[0:batch_end_index],
-                           not_terminals[0:batch_end_index],
-                           succ_states[0:batch_end_index, :],
-                           succ_players[0:batch_end_index],
-                           succ_legal_moves[0:batch_end_index],
-                           eligibilities[0:batch_end_index])
+                           policies[0:batch_end_index, :],
+                           values[0:batch_end_index])
             
             # add the rest of the elements at the beginning of the buffer
             self.add_batch(states[batch_end_index:, :],
-                           action_indices[batch_end_index:],
-                           rewards[batch_end_index:],
-                           not_terminals[batch_end_index:],
-                           succ_states[batch_end_index:, :],
-                           succ_players[batch_end_index:],
-                           succ_legal_moves[batch_end_index:],
-                           eligibilities[batch_end_index:])
+                           policies[batch_end_index:, :],
+                           values[batch_end_index:])
             return
             
         # add the elements into the ring buffer    
         self.state[start_index:end_index, :] = states
-        self.action_index[start_index:end_index] = action_indices
-        self.reward[start_index:end_index] = rewards
-        self.not_terminal[start_index:end_index] = not_terminals
-        self.succ_state[start_index:end_index, :] = succ_states
-        self.succ_player[start_index:end_index] = succ_players
-        self.succ_legal_move[start_index:end_index] = succ_legal_moves
-        self.eligibility[start_index:end_index] = eligibilities
+        self.policy[start_index:end_index, :] = policies
+        self.value[start_index:end_index] = values
           
         # update indices and size
         self.ring_index += sample_count
@@ -335,87 +270,40 @@ class ExperienceBuffer:
           
         if self.size < self.max_size:
             self.size += sample_count
-     
-
-    def update_eligibilities(self, net, lambda_param, disc):
-        """
-        recalculates all the eligibility traces in the experience buffer
-        :param net:             the neural network
-        :param lambda_param:    lambda parameter for TD(lambda)
-        :param disc:            the discount factor
-        :return:
-        """
-
-        terminal_indices = np.where(self.not_terminal.data.cpu().numpy() == 0)[0]
-        for i in range(terminal_indices.size - 1):
-            start_index = terminal_indices[i] + 1
-            end_index = terminal_indices[i+1]+1
-            
-            rewards = self.reward[start_index:end_index]
-            succ_states = self.succ_state[start_index:end_index, :]
-            succ_players = self.succ_player[start_index:end_index]
-            succ_legal_moves = self.succ_legal_move[start_index:end_index]
-            eligibilities = self.calc_eligibility(net, rewards, succ_states, succ_players, succ_legal_moves, lambda_param, disc)
-            self.eligibility[start_index:end_index] = eligibilities
-            
-        # last experience can continue at the beginning of the array
-        if terminal_indices[terminal_indices.size-1] < self.size-1:
-            first_start_index = terminal_indices[terminal_indices.size-1]+1
-            fist_end_index = self.size
-            second_start_index = 0
-            second_end_index = terminal_indices[0]+1
-            
-            rewards = torch.cat((self.reward[first_start_index:fist_end_index], self.reward[second_start_index:second_end_index]), 0)
-            succ_states = torch.cat((self.succ_state[first_start_index:fist_end_index], self.succ_state[second_start_index:second_end_index]), 0)
-            succ_players = torch.cat((self.succ_player[first_start_index:fist_end_index], self.succ_player[second_start_index:second_end_index]), 0)
-            succ_legal_moves = self.succ_legal_move[first_start_index:fist_end_index] + self.succ_legal_move[second_start_index:second_end_index]
-            eligibilities = self.calc_eligibility(net, rewards, succ_states, succ_players, succ_legal_moves, lambda_param, disc)
-            self.eligibility[first_start_index:fist_end_index] = eligibilities[0:fist_end_index-first_start_index]
-            self.eligibility[second_start_index:second_end_index] = eligibilities[fist_end_index-first_start_index:eligibilities.shape[0]]
-             
-
-    def calc_eligibility(self, net, rewards, succ_states, succ_players, succ_legal_moves, lambda_param, disc):
-        """
-        calculates the eligibilities
-        :param net:                 the neural network
-        :param rewards:             immediate rewards of the state transition
-        :param succ_states:         the next state after the greedy move was played
-        :param succ_players:        the player who's move it is in the successor state s_t+1
-        :param succ_legal_moves:    all legal moves in the successor state s_t+1
-        :param lambda_param:        the lambda parameter for the TD(lambda)
-        :param disc:                the discount factor
-        :return:                    the eligibilities
-        """
-
-        # calculate the values
-        succ_states = succ_states.to(Globals.device)
-        q_values = net(succ_states)
         
-        # calculate all the eligibilities recursively
-        exp_size = rewards.shape[0]
-        eligibility = np.empty(exp_size)
-        eligibility[exp_size-1] = rewards[exp_size-1]  # the terminal state
         
-        for i in range(exp_size-2, -1, -1):
-            if succ_players[i] == CONST.WHITE_MOVE:
-                legal_q_values = q_values[0, 0:9][succ_legal_moves[i]]
-                q_value, _ = legal_q_values.max(0)
-            else:
-                legal_q_values = q_values[0, 9:18][succ_legal_moves[i]]
-                q_value, _ = legal_q_values.min(0)
-
-            eligibility[i] = rewards[i] + disc*(lambda_param*eligibility[i+1] + (1-lambda_param)*q_value)
         
-        return torch.Tensor(eligibility).unsqueeze(1)
-
-
+#         
+# 
+#     def add(self, state, policy, value):
+#         """
+#         adds the passed experience to the buffer
+#         :param state:           the state s_t
+#         :param policy:          probability value for all actions
+#         :param value:           value of the current state
+#         :return:
+#         """
+# 
+#         self.state[self.ring_index, :] = torch.Tensor(state)
+#         self.policy[self.ring_index, :] = torch.Tensor(policy)
+#         self.value[self.ring_index] = value
+#         
+#         
+#         # update indices and size
+#         self.ring_index += 1
+#         self.ring_index = self.ring_index % self.max_size
+#         
+#         if self.size < self.max_size:
+#             self.size += 1
+            
 
     def random_batch(self, batch_size):
         """
         returns a random batch of the experience buffer
-        :param batch_size:      the size of the batch
-        :return:                states, players, eligibilities
+        :param batch_size:   the size of the batch
+        :return:             state, policy, value
         """
+
         sample_size = batch_size if self.size > batch_size else self.size
         idx = np.random.choice(self.size, sample_size, replace=False)
-        return self.state[idx, :], self.action_index[idx, :], self.eligibility[idx, :]
+        return self.state[idx, :], self.policy[idx, :], self.value[idx]

@@ -189,7 +189,6 @@ class ExperienceBuffer:
     def __init__(self, max_size):
         self.max_size = max_size
                
-        # define the experience buffer
         self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
         self.player = torch.empty(max_size, 1)
         self.reward = torch.empty(max_size, 1)
@@ -205,7 +204,7 @@ class ExperienceBuffer:
         """
         adds the passed experience to the buffer
         :param state:           the state s_t
-        :param player:          the player who'S move it is
+        :param player:          the player who's move it is
         :param reward:          the observed reward
         :param not_terminal:    0 if the game is finished, 1 if it is not finished
         :param succ_state:      the state after the action was executed, s_t+1

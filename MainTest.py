@@ -26,6 +26,12 @@ i = np.array([0,2])
 a[i] = 1
 print(a)
 
+
+tuple_list = [(1.0,1.1,1.2), (2.0,2.1,2.2), (3.0,3.1,3.2)]
+sample_ids = [0,1,2]
+a, b, c = list(zip(*[tuple_list[i] for i in sample_ids]))
+
+
 board = BitBoard()
 mcts = mcts.MCTS(board, 4)
 net = alpha_zero_learning.Network(0.001)
