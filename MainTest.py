@@ -4,6 +4,7 @@ import numpy as np
 import logging
 from rl.alpha_zero import mcts, alpha_zero_learning
 from game.tic_tac_toe import BitBoard
+import time
 
 # initialize the logger
 # The logger
@@ -28,7 +29,11 @@ print(a)
 board = BitBoard()
 mcts = mcts.MCTS(board, 4)
 net = alpha_zero_learning.Network(0.001)
-mcts.policy_values(net, 5, 0.5)
+
+start = time.time()
+policy = mcts.policy_values(net, 80, 0.9)
+end = time.time()
+print("time: {}, policy: {}".format(end-start, policy))
 
 
 

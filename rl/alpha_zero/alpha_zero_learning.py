@@ -15,15 +15,15 @@ class Network(nn.Module):
     def __init__(self, learning_rate):
         super(Network, self).__init__()
                 
-        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 54)    # first fully connected layer
-        self.fc2 = nn.Linear(54, 54)                     # second fully connected layer
-        self.fc3 = nn.Linear(54, 27)                     # third fully connected layer
+        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE + 1 , 54)  # first fully connected layer, all stones + the color of the player
+        self.fc2 = nn.Linear(54, 54)                        # second fully connected layer
+        self.fc3 = nn.Linear(54, 27)                        # third fully connected layer
         
         # policy head
-        self.fc4p = nn.Linear(27, CONST.NN_ACTION_SIZE)  # approximation for the action value function Q(s, a)
+        self.fc4p = nn.Linear(27, CONST.NN_POLICY_SIZE)     # approximation for the action value function Q(s, a)
         
         # value head
-        self.fc4v = nn.Linear(27, 1)                     # approximation for the value function V(s)
+        self.fc4v = nn.Linear(27, 1)                        # approximation for the value function V(s)
 
         # define the optimizer
         self.optimizer = optim.SGD(self.parameters(), lr=learning_rate)

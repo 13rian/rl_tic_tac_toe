@@ -112,6 +112,17 @@ class BitBoard:
         bit_board = bit_board.reshape((1, CONST.NN_INPUT_SIZE))
         return bit_board, player
     
+    
+    def to_feature_vector(self):
+        """
+        returns a feature vector of the board the first 9 values are white followed by the black position
+        the last value indicates if it is white's move or black's move
+        :return:
+        """
+        feature_vec = np.empty((1, CONST.NN_INPUT_SIZE + 1))
+        feature_vec[0, 0:CONST.NN_INPUT_SIZE], feature_vec[0, CONST.NN_INPUT_SIZE] = self.bit_board_representation()
+        return feature_vec
+    
 
     def int_to_board(self, number):
         """

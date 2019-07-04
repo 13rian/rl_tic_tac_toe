@@ -12,7 +12,7 @@ class MCTS:
     """
     
     def __init__(self, board, c_puct):
-        self.board = board.clone()  # represents the game
+        self.board = board          # represents the game
         self.c_puct = c_puct        # a tuneable hyperparameter. The larger this number, the more the model explores
         
         self.P = {}                 # holds the policies for a game state, key: s, value: policy
@@ -37,15 +37,16 @@ class MCTS:
                
         # perform the tree search
         for _ in range(mc_sim_count):
-            self.tree_search(net)
+            board = self.board.clone()
+            self.tree_search(board, net)
 
         s = self.board.state_number()
-        counts = [self.N_sa[(s,a)] if (s,a) in self.Nsa else 0 for a in range(CONST.NN_ACTION_SIZE)]
+        counts = [self.N_sa[(s,a)] if (s,a) in self.N_sa else 0 for a in range(CONST.NN_POLICY_SIZE)]
 
         # in order to learn something set the probabilities of the best action to 1 and all other action to 0
         if temp == 0:
             action = np.argmax(counts)
-            probs = [0]*CONST.NN_ACTION_SIZE
+            probs = [0]*CONST.NN_POLICY_SIZE
             probs[action] = 1
             return probs
         
@@ -56,7 +57,7 @@ class MCTS:
     
         
         
-    def tree_search(self, net):
+    def tree_search(self, board, net):
         """
         Performs one iteration of the monte-carlo tree search.
         The method is recursively called until a leaf node is found. This is a game
@@ -70,27 +71,29 @@ class MCTS:
         is flipped because the value of the game for the other player is the negative value of
         the state of the current player          
         :param net:       neural network that approximates the policy and the value
+        :param board:     represents the game
         :return: 
         """
     
         # check if the game is terminal    
-        if self.board.terminal:
-            return -self.board.reward()
+        if board.terminal:
+            return -board.reward()
     
         # check if we are on a leaf node (state form which no simulation was played so far)
-        s = self.board.state_number()
-        if s not in self.P:
-            batch, _ = self.board.bit_board_representation()  
+        s = board.state_number()
+        if s not in self.P:  
+            batch = board.to_feature_vector()
             batch = torch.Tensor(batch).to(Globals.device)
             self.P[s], v = net(batch)
+            self.P[s] = self.P[s].detach().squeeze().numpy()
+            v = v.item()
             
             # ensure that the summed probability of all valid moves is 1
-            legal_moves = np.array(self.board.legal_moves)
-            legal_move_indices = np.zeros(len(legal_moves))
+            legal_moves = np.array(board.legal_moves)
+            legal_move_indices = np.zeros(CONST.NN_POLICY_SIZE)
             legal_move_indices[legal_moves] = 1
-            legal_move_indices = torch.Tensor(legal_move_indices).to(Globals.device)
             self.P[s] = self.P[s] * legal_move_indices
-            total_prob = torch.sum(self.P[s], 1).item()
+            total_prob = np.sum(self.P[s])
             if total_prob > 0:
                 self.P[s] /= total_prob    # normalize the probabilities
             
@@ -105,7 +108,7 @@ class MCTS:
         # choose the action with the highest upper confidence bound
         max_ucb = -float("inf")
         action = -1
-        for a in self.board.legal_moves:
+        for a in board.legal_moves:
             if (s,a) in self.Q:
                 u = self.Q[(s,a)] + self.c_puct*self.P[s][a]*math.sqrt(self.N_s[s]) / (1+self.N_sa[(s,a)])
             else:
@@ -117,12 +120,12 @@ class MCTS:
                 action = a
         
         a = action
-        self.board.play_move(a)
-        v = self.tree_search(net)
+        board.play_move(a)
+        v = self.tree_search(board, net)
         
         
         # update the Q and N values
-        if (s,a) in self.Qsa:
+        if (s,a) in self.Q:
             self.Q[(s,a)] = (self.N_sa[(s,a)]*self.Q[(s,a)] + v) / (self.N_sa[(s,a)] + 1)
             self.N_sa[(s,a)] += 1
         else:   
