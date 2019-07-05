@@ -52,7 +52,6 @@ for i in range(epoch_count):
     
     ###### evaluation: let the agent play against a random test opponent
     if i % test_interval == 0:
-        # let both q learners play against a random opponent
         logger.info("start evaluating the network in epoch {}".format(i))
         white_score = agent.play_against_random(CONST.WHITE, test_game_count)
         logger.info("white score rate after {} epochs: {}".format(i, white_score))

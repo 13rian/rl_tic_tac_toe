@@ -20,7 +20,7 @@ logger = logging.getLogger('TicTacToeTrain')
 random.seed(a=None, version=2)
 
 
-# start to train the neural network
+# define the parameters
 epoch_count = 1000        # the number of epochs to train the neural network 1000 ~ 100'000 episodes ~ 25min
 episode_count = 100       # the number of games that are self-played in one epoch
 test_interval = 10        # epoch intervals at which the network plays against a random player
@@ -51,7 +51,6 @@ for i in range(epoch_count):
     
     ###### evaluation: let the agent play against a random test opponent
     if i % test_interval == 0:
-        # let both q learners play against a random opponent
         logger.info("start evaluating the network in epoch {}".format(i))
         white_score = agent.play_against_random(CONST.WHITE, test_game_count)
         logger.info("white score rate after {} epochs: {}".format(i, white_score))

@@ -33,11 +33,11 @@ a, b, c = list(zip(*[tuple_list[i] for i in sample_ids]))
 
 
 board = BitBoard()
-mcts = mcts.MCTS(board, 4)
+mcts = mcts.MCTS(4)
 net = alpha_zero_learning.Network(0.001)
 
 start = time.time()
-policy = mcts.policy_values(net, 80, 0.9)
+policy = mcts.policy_values(net, board, 80, 0)
 end = time.time()
 print("time: {}, policy: {}".format(end-start, policy))
 

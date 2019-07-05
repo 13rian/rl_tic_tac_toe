@@ -5,11 +5,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import random
 
 from game import tic_tac_toe
 from game.globals import Globals, CONST
 from rl.alpha_zero.mcts import MCTS
+from rl.alpha_zero import mcts
 
 
 
@@ -17,7 +17,7 @@ class Network(nn.Module):
     def __init__(self, learning_rate):
         super(Network, self).__init__()
                 
-        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE + 1 , 54)  # first fully connected layer, all stones + the color of the player
+        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 54)       # first fully connected layer, all stones + the color of the player
         self.fc2 = nn.Linear(54, 54)                        # second fully connected layer
         self.fc3 = nn.Linear(54, 27)                        # third fully connected layer
         
@@ -64,12 +64,12 @@ class Network(nn.Module):
         return p, v
 
 
-    def train_step(self, batch, target, action_index):
+    def train_step(self, batch, target_p, target_v):
         """
         executes one training step of the neural network
         :param batch:           tensor with data [batchSize, nn_input_size]
-        :param target:          tensor with the true q-values estimated by the Bellmann equation
-        :param action_index:    the index of the action that corresponds to the passed target
+        :param target_p:        policy target
+        :param target_v:        value target
         :return:                the loss
         """
 
@@ -78,27 +78,23 @@ class Network(nn.Module):
         # send the tensors to the used device
         data = batch.to(Globals.device)
          
-        self.optimizer.zero_grad()          # reset the gradients to zero in every epoch
-        prediction = self(data)             # pass the data through the network to get the prediction
+        self.optimizer.zero_grad()                  # reset the gradients to zero in every epoch
+        prediction_p, prediction_v = self(data)     # pass the data through the network to get the prediction
 
         # create the label
-        label = prediction.clone()
-        target = target.to(Globals.device).squeeze(1)
-        label[np.arange(0, batch.shape[0]), action_index.squeeze(1)] = target     # only replace the target values of the executed action
-        criterion = nn.MSELoss()
+        target_p = target_p.to(Globals.device)
+        target_v = target_v.to(Globals.device)
+        criterion_p = nn.MSELoss()
+        criterion_v = nn.MSELoss()
          
         # define the loss
-        loss = criterion(prediction, label)
+        loss_p = criterion_p(prediction_p, target_p)
+        loss_v = criterion_v(prediction_v, target_v)
+        loss = loss_p + loss_v
         loss.backward()              # back propagation
         self.optimizer.step()        # make one optimization step
         return loss
     
-    
-#         out1, out2 = model(data)
-#         loss1 = criterion1(out1, target1)
-#         loss2 = criterion2(out2, target2)
-#         loss = loss1 + loss2
-#         loss.backward()
 
 
 class Agent:
@@ -118,7 +114,7 @@ class Agent:
         self.temp = temp                                             # the temperature, controls the policy value distribution
         self.batch_size = batch_size                                 # the size of the experience replay buffer
         self.old_network = Network(learning_rate)                    # the network form the previous generation
-        self.new_network = copy.deepcopy(self.training_network)      # the most actual neural network
+        self.new_network = copy.deepcopy(self.old_network)           # the most actual neural network
 
         self.board = tic_tac_toe.BitBoard()                          # tic tac toe board
         self.experience_buffer = ExperienceBuffer(exp_buffer_size)   # buffer that saves all experiences
@@ -183,36 +179,135 @@ class Agent:
             
 
 
-    def q_update(self):
+    def nn_update(self):
         """
-        updates the training neural network by using a random batch from the experience replay
+        updates the neural network by using all samples from the experience buffer
         :return:
         """
-
-        # exit if the experience buffer is not yet large enough
-        if self.experience_buffer.size < self.batch_size:
-            return
         
-        # get the random batch
-        states, action_indices, eligibilities = self.experience_buffer.random_batch(self.batch_size)
+        # get all samples in a randomized order
+        states, policies, values = self.experience_buffer.random_batch(self.experience_buffer.size)
         states = states.to(Globals.device)
-        action_indices = action_indices.to(Globals.device)
-        eligibilities = eligibilities.to(Globals.device)
-
-        # execute the training step of the network
-        self.network.train_step(states, eligibilities, action_indices)   # the eligibility trace is used as td target
+        policies = policies.to(Globals.device)
+        values = values.to(Globals.device)
+        
+        batch_count = int(self.experience_buffer.size / self.batch_size)
+        for i in range(batch_count):
+            start_index = (i-1) * self.batch_size
+            end_index = i*self.batch_size - 1
+            
+            state_batch = states[start_index:end_index, :]
+            policy_batch = policies[start_index:end_index, :]
+            value_batch = values[start_index:end_index, :]
+            
+            # execute the training step of the network
+            self.new_network.train_step(state_batch, policy_batch, value_batch)
+        
+            
+        # execute the last update with a smaller batch
+        if end_index < self.experience_buffer.size - 1:
+            state_batch = states[end_index:self.experience_buffer.size - 1, :]
+            policy_batch = policies[end_index:self.experience_buffer.size - 1, :]
+            value_batch = values[end_index:self.experience_buffer.size - 1, :]
+            
+            self.new_network.train_step(state_batch, policy_batch, value_batch)
+    
+    
+    def network_duel(self, min_win_rate, game_count):
+        """
+        lets the old network play against the new network, if the new network has a win rate higher than
+        the passed min_win_rate it will become the old network and a copy of it will be used for future training
+        if the win rate is not reached the new network will be trained for another round
+        :param min_win_rate       the minimal win rate to replace the old with the new network
+        :param game_count:        number of games the old and the new network play against each other
+        :return:                  True if the new network reached the desired win_rate, False otherwise
+        """
+        
+        win_rate = self.play_against_old_net(game_count)  
+        if win_rate >= min_win_rate:
+            self.old_network = self.new_network
+            self.new_network = copy.deepcopy(self.new_network)
+            self.new_network.to(Globals.device)
+            return True
+        
+        else:
+            return False
             
 
     def play_against_random(self, color, game_count):
         """
         lets the agent play against a random player
-        :param color:       the color of the agent
-        :param game_count:  the number of games that are played
-        :return:            the mean score against the random player 0: lose, 0.5 draw, 1: win
+        :param color:           the color of the agent
+        :param game_count:      the number of games that are played
+        :return:                the mean score against the random player 0: lose, 0.5 draw, 1: win
         """
 
-        score = tic_tac_toe.q_net_against_random(self.network, color, game_count)
+        score = tic_tac_toe.az_net_against_random(self.old_network, color, self.c_puct, self.mcts_sim_count, game_count)
         return score
+    
+    
+    def play_against_old_net(self, game_count):
+        """
+        lets the training network play against the previous generation
+        :param game_count:        number of games the old and the new network play against each other
+        :param c_puct:            constant that controls the exploration rate of the mcts
+        :param mcts_sim_count:    number of monte-carlo tree search simulations
+        :return:         
+        """
+         
+        board = tic_tac_toe.BitBoard()
+        mcts = mcts.MCTS(board, self.c_puct)
+        policy = mcts.policy_values(self.old_network, self.mcts_sim_count, 0)
+         
+         
+        half_game_count = int(game_count/2)
+        wins_old_net = 0
+        wins_new_net = 0
+         
+        # play half the games where the old network is white
+        board = tic_tac_toe.BitBoard()
+        mcts_old = mcts.MCTS(self.c_puct)
+        mcts_new = mcts.MCTS(self.c_puct)
+        for _ in range(half_game_count):
+            board = tic_tac_toe.BitBoard()
+            while not board.terminal:
+                if board.player == CONST.WHITE:
+                    policy = mcts_old.policy_values(board, self.old_network, self.mcts_sim_count, 0)
+                    move = np.where(policy==1)[0] 
+                    board.play_move(move)
+                else:
+                    policy = mcts_new.policy_values(board, self.new_network, self.mcts_sim_count, 0)
+                    move = np.where(policy==1)[0] 
+                    board.play_move(move)
+        
+                # board.print()
+            if board.reward() == 1:
+                wins_old_net += 1
+                
+            if board.reward() == -1:
+                wins_new_net += 1
+                
+        
+        # play half the games where the new network is white
+        for _ in range(half_game_count):
+            while not board.terminal:
+                if board.player == CONST.WHITE:
+                    policy = mcts_new.policy_values(board, self.new_network, self.mcts_sim_count, 0)
+                    move = np.where(policy==1)[0] 
+                    board.play_move(move)
+                else:
+                    policy = mcts_old.policy_values(board, self.old_network, self.mcts_sim_count, 0)
+                    move = np.where(policy==1)[0] 
+                    board.play_move(move)
+            
+                # board.print()
+            if board.reward() == 1:
+                wins_new_net += 1
+                
+            if board.reward() == -1:
+                wins_old_net += 1
+                
+        return wins_new_net / (wins_new_net + wins_old_net)       
 
     
      
@@ -227,6 +322,19 @@ class ExperienceBuffer:
         
         self.size = 0                  # size of the buffer
         self.ring_index = 0            # current index of where the next sample is added
+       
+        
+    def clear(self):
+        """
+        empties the experience buffer
+        """
+        self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE + 1)
+        self.policy = torch.empty(max_size, CONST.NN_POLICY_SIZE)
+        self.value = torch.empty(max_size, 1)
+        
+        self.size = 0                  # size of the buffer
+        self.ring_index = 0            # current index of where the next sample is added
+        
         
         
     def add_batch(self, states, policies, values):
@@ -271,30 +379,6 @@ class ExperienceBuffer:
         if self.size < self.max_size:
             self.size += sample_count
         
-        
-        
-#         
-# 
-#     def add(self, state, policy, value):
-#         """
-#         adds the passed experience to the buffer
-#         :param state:           the state s_t
-#         :param policy:          probability value for all actions
-#         :param value:           value of the current state
-#         :return:
-#         """
-# 
-#         self.state[self.ring_index, :] = torch.Tensor(state)
-#         self.policy[self.ring_index, :] = torch.Tensor(policy)
-#         self.value[self.ring_index] = value
-#         
-#         
-#         # update indices and size
-#         self.ring_index += 1
-#         self.ring_index = self.ring_index % self.max_size
-#         
-#         if self.size < self.max_size:
-#             self.size += 1
             
 
     def random_batch(self, batch_size):

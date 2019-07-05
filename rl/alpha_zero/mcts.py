@@ -11,8 +11,7 @@ class MCTS:
     handles the monte-carlo tree search
     """
     
-    def __init__(self, board, c_puct):
-        self.board = board          # represents the game
+    def __init__(self, c_puct):
         self.c_puct = c_puct        # a tuneable hyperparameter. The larger this number, the more the model explores
         
         self.P = {}                 # holds the policies for a game state, key: s, value: policy
@@ -22,7 +21,7 @@ class MCTS:
         
         
     
-    def policy_values(self, net, mc_sim_count, temp):
+    def policy_values(self, board, net, mc_sim_count, temp):
         """
         executes mc_sim_count number of monte-carlo simulations to obtain the probability
         vector of the current game position
@@ -37,10 +36,10 @@ class MCTS:
                
         # perform the tree search
         for _ in range(mc_sim_count):
-            board = self.board.clone()
+            board = board.clone()
             self.tree_search(board, net)
 
-        s = self.board.state_number()
+        s = board.state_number()
         counts = [self.N_sa[(s,a)] if (s,a) in self.N_sa else 0 for a in range(CONST.NN_POLICY_SIZE)]
 
         # in order to learn something set the probabilities of the best action to 1 and all other action to 0
@@ -82,7 +81,7 @@ class MCTS:
         # check if we are on a leaf node (state form which no simulation was played so far)
         s = board.state_number()
         if s not in self.P:  
-            batch = board.to_feature_vector()
+            batch, _ = board.white_perspective()
             batch = torch.Tensor(batch).to(Globals.device)
             self.P[s], v = net(batch)
             self.P[s] = self.P[s].detach().squeeze().numpy()

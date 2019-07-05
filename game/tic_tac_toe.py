@@ -6,6 +6,7 @@ import torch
 from utils import utils
 from game.globals import CONST
 from game.globals import Globals
+from rl.alpha_zero import mcts
 
 
 class BitBoard:
@@ -113,15 +114,24 @@ class BitBoard:
         return bit_board, player
     
     
-    def to_feature_vector(self):
+    def white_perspective(self):
         """
-        returns a feature vector of the board the first 9 values are white followed by the black position
-        the last value indicates if it is white's move or black's move
+        returns the board from the white perspective. If it is white's move the normal board representation is returned.
+        If it is black's move the white and the black pieces are swapped.
         :return:
         """
-        feature_vec = np.empty((1, CONST.NN_INPUT_SIZE + 1))
-        feature_vec[0, 0:CONST.NN_INPUT_SIZE], feature_vec[0, CONST.NN_INPUT_SIZE] = self.bit_board_representation()
-        return feature_vec
+        
+        white_board = self.int_to_board(self.white_player)
+        black_board = self.int_to_board(self.black_player)
+        if self.player == CONST.WHITE:
+            bit_board = np.stack((white_board, black_board), axis=0)
+            player = CONST.WHITE_MOVE
+        else:
+            bit_board = np.stack((black_board, white_board), axis=0)
+            player = CONST.BLACK_MOVE
+        
+        bit_board = bit_board.reshape((1, CONST.NN_INPUT_SIZE))
+        return bit_board, player
     
 
     def int_to_board(self, number):
@@ -438,6 +448,40 @@ def q_net_against_random(net, network_color, game_count):
         score += network_score
 
     return score / game_count
+
+
+def az_net_against_random(net, network_color, c_puct, mcts_sim_count, game_count):
+    """
+    let the alpha zero network play against an opponent that just makes random moves
+    :param net:             the trained network
+    :param network_color:   the color of the network
+    :param c_puct:          constant that controls the exploration in the mcts
+    :param mcts_sim_count:  number of simulations in the mcts
+    :param game_count:      the number of games to play
+    :return:                the fraction of point the network got against a random player
+    """
+
+    score = 0
+    for _ in range(game_count):
+        board = BitBoard()
+        mcts = mcts.MCTS(c_puct)
+        while not board.terminal:
+            if board.player == network_color:
+                policy = mcts.policy_values(board, net, mcts_sim_count, 0)
+                move = np.where(policy==1)[0] 
+                board.play_move(move)
+            else:
+                move = board.random_move()
+                board.play_move(move)
+
+            # board.print()
+
+        network_score = board.reward() if network_color == CONST.WHITE else -board.reward()
+        network_score = (network_score + 1) / 2
+        score += network_score
+
+    return score / game_count
+
 
 
 def play_random_vs_random(game_count):
