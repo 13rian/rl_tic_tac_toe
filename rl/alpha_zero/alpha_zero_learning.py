@@ -123,6 +123,7 @@ class Agent:
 
         # to save the experience of one episode
         self.state_list = []
+        self.player_list = []
         self.policy_list = []
         self.value_list = []
         
@@ -137,6 +138,7 @@ class Agent:
         
         # reset the experience lists
         self.state_list = []
+        self.player_list = []
         self.policy_list = []
         self.value_list = []
     
@@ -152,7 +154,7 @@ class Agent:
         
         # play the epsilon greedy move and save the state transition in the experience lists      
         while not self.board.terminal:
-            state, _ = self.board.white_perspective()
+            state, player = self.board.white_perspective()
             policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, self.temp)
             
             # sample from the policy to determine the move to play
@@ -161,20 +163,22 @@ class Agent:
             
             # save the training example
             self.state_list.append(state)
+            self.player_list.append(player)
             self.policy_list.append(policy)
         
         # calculate the values from the perspective of the player who's move it is
         reward = self.board.reward()
-        for state in self.state_list:
-            value = reward if self.board.player == CONST.WHITE else -reward
+        for player in self.player_list:
+            value = reward if player == CONST.WHITE_MOVE else -reward
             self.value_list.append(value)
   
         # add the training examples to the experience buffer
         state = torch.Tensor(self.state_list).reshape(-1, CONST.NN_INPUT_SIZE)
+        player = torch.Tensor(self.player_list).unsqueeze(1)
         policy = torch.Tensor(self.policy_list).reshape(-1, CONST.NN_POLICY_SIZE)
         value = torch.Tensor(self.value_list).unsqueeze(1)
              
-        self.experience_buffer.add_batch(state, policy, value)
+        self.experience_buffer.add_batch(state, player, policy, value)
             
 
 
@@ -275,7 +279,7 @@ class Agent:
                     move = np.where(policy==1)[0] 
                     board.play_move(move)
         
-                board.print()
+                # board.print()
             if board.reward() == 1:
                 wins_old_net += 1
                 
@@ -316,6 +320,7 @@ class ExperienceBuffer:
         self.max_size = max_size
                
         self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
+        self.player = torch.empty(max_size, 1)
         self.policy = torch.empty(max_size, CONST.NN_POLICY_SIZE)
         self.value = torch.empty(max_size, 1)
         
@@ -328,6 +333,7 @@ class ExperienceBuffer:
         empties the experience buffer
         """
         self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
+        self.player = torch.empty(max_size, 1)
         self.policy = torch.empty(max_size, CONST.NN_POLICY_SIZE)
         self.value = torch.empty(max_size, 1)
         
@@ -336,11 +342,12 @@ class ExperienceBuffer:
         
         
         
-    def add_batch(self, states, policies, values):
+    def add_batch(self, states, players, policies, values):
         """
         adds the multiple experiences to the buffer
         :param states:           the state s_t
-        :param policies:          probability value for all actions
+        :param players:          the player who's move it is
+        :param policies:         probability value for all actions
         :param values:           value of the current state
         :return:
         :return:
@@ -357,17 +364,20 @@ class ExperienceBuffer:
             
             # add all elements until the end of the ring buffer array
             self.add_batch(states[0:batch_end_index, :],
+                           players[0:batch_end_index],
                            policies[0:batch_end_index, :],
                            values[0:batch_end_index])
             
             # add the rest of the elements at the beginning of the buffer
             self.add_batch(states[batch_end_index:, :],
+                           players[batch_end_index:],
                            policies[batch_end_index:, :],
                            values[batch_end_index:])
             return
             
         # add the elements into the ring buffer    
         self.state[start_index:end_index, :] = states
+        self.player[start_index:end_index] = players
         self.policy[start_index:end_index, :] = policies
         self.value[start_index:end_index] = values
           

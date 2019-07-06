@@ -13,7 +13,7 @@ from rl.alpha_zero import alpha_zero_learning
 
 # The logger
 utils.init_logger(logging.DEBUG, file_name="log/tic_tac_toe.log")
-logger = logging.getLogger('TicTacToeTrain')
+logger = logging.getLogger('Alpha Tic')
 
 
 # set the random seed
