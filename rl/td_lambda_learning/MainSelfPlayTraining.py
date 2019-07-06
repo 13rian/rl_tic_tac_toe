@@ -8,7 +8,7 @@ from utils import utils
 
 from game.globals import CONST
 from game.globals import Globals
-import td_lambda_learning
+from rl.td_lambda_learning import td_lambda_learning
 
 
 # The logger

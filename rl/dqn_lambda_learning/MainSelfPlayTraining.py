@@ -8,7 +8,7 @@ from utils import utils
 
 from game.globals import CONST
 from game.globals import Globals
-import dqn_lambda_learning
+from rl.dqn_lambda_learning import dqn_lambda_learning
 
 
 # The logger

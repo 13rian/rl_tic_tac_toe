@@ -36,8 +36,8 @@ class MCTS:
                
         # perform the tree search
         for _ in range(mc_sim_count):
-            board = board.clone()
-            self.tree_search(board, net)
+            sim_board = board.clone()
+            self.tree_search(sim_board, net)
 
         s = board.state_number()
         counts = [self.N_sa[(s,a)] if (s,a) in self.N_sa else 0 for a in range(CONST.NN_POLICY_SIZE)]
@@ -47,12 +47,12 @@ class MCTS:
             action = np.argmax(counts)
             probs = [0]*CONST.NN_POLICY_SIZE
             probs[action] = 1
-            return probs
+            return np.array(probs)
         
         else:
             counts = [c**(1./temp) for c in counts]
             probs = [c / float(sum(counts)) for c in counts]
-            return probs    
+            return np.array(probs)    
     
         
         
@@ -76,10 +76,11 @@ class MCTS:
     
         # check if the game is terminal    
         if board.terminal:
-            return -board.reward()
+            return board.reward()
     
         # check if we are on a leaf node (state form which no simulation was played so far)
         s = board.state_number()
+        player = board.player
         if s not in self.P:  
             batch, _ = board.white_perspective()
             batch = torch.Tensor(batch).to(Globals.device)
@@ -102,7 +103,7 @@ class MCTS:
                 self.P[s][legal_moves] = 1 / len(legal_moves)
             
             self.N_s[s] = 0
-            return -v
+            return v
       
         # choose the action with the highest upper confidence bound
         max_ucb = -float("inf")
@@ -111,7 +112,7 @@ class MCTS:
             if (s,a) in self.Q:
                 u = self.Q[(s,a)] + self.c_puct*self.P[s][a]*math.sqrt(self.N_s[s]) / (1+self.N_sa[(s,a)])
             else:
-                u = 0
+                u = self.c_puct*self.P[s][a]*math.sqrt(self.N_s[s] + 1e-8)  # avoid division by 0
             
 
             if u > max_ucb:
@@ -124,15 +125,19 @@ class MCTS:
         
         
         # update the Q and N values
+        v_true = v
+        if player == CONST.BLACK:
+            v_true *= -1     # flip the value for the black player since the game is always viewed from the white perspective
+        
         if (s,a) in self.Q:
-            self.Q[(s,a)] = (self.N_sa[(s,a)]*self.Q[(s,a)] + v) / (self.N_sa[(s,a)] + 1)
+            self.Q[(s,a)] = (self.N_sa[(s,a)]*self.Q[(s,a)] + v_true) / (self.N_sa[(s,a)] + 1)
             self.N_sa[(s,a)] += 1
         else:   
-            self.Q[(s,a)] = v
+            self.Q[(s,a)] = v_true
             self.N_sa[(s,a)] = 1
         
         self.N_s[s] += 1
-        return -v
+        return v
     
     
     

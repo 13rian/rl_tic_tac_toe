@@ -8,7 +8,7 @@ from utils import utils
 
 from game.globals import CONST
 from game.globals import Globals
-import q_learning
+from rl.q_learning import q_learning
 
 
 # The logger

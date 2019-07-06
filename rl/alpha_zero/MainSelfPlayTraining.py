@@ -8,7 +8,7 @@ from utils import utils
 
 from game.globals import CONST
 from game.globals import Globals
-import alpha_zero
+from rl.alpha_zero import alpha_zero_learning
 
 
 # The logger
@@ -24,7 +24,7 @@ random.seed(a=None, version=2)
 epoch_count = 400               # the number of epochs to train the neural network 100'000 episodes ~ 1h
 episode_count = 100             # the number of games that are self-played in one epoch
 test_interval = 10              # epoch intervals at which the network plays against a random player
-test_game_count = 1000          # the number of games that are played in the test against the random opponent
+test_game_count = 100          # the number of games that are played in the test against the random opponent
 mcts_sim_count = 80             # the number of simulations for the monte-carlo tree search
 c_puct = 1                      # the higher this constant the more the mcts explores
 temp = 1                        # the temperature, controls the policy value distribution
@@ -38,7 +38,7 @@ Globals.device = torch.device('cpu')
 
 
 # create the agent
-agent = alpha_zero.Agent(learning_rate, mcts_sim_count, c_puct, temp, batch_size, exp_buffer_size)
+agent = alpha_zero_learning.Agent(learning_rate, mcts_sim_count, c_puct, temp, batch_size, exp_buffer_size)
 
 
 # to plot the fitness
@@ -79,8 +79,12 @@ for i in range(epoch_count):
 
     ###### let the previous network play against the new network
     # logger.info("sync neural networks in epoch {}".format(i))
-    win_rate = agent.play_against_old_net(test_game_count)
-    if win_rate
+    network_improved = agent.network_duel(new_net_win_rate, test_game_count)
+    if network_improved:
+        logger.info("new generation network has improved")
+    else:
+        logger.info("new generation network has not improved")
+
 
 
 end_training = time.time()
