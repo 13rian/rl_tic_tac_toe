@@ -17,7 +17,7 @@ class Network(nn.Module):
     def __init__(self, learning_rate):
         super(Network, self).__init__()
                 
-        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 54)       # first fully connected layer, all stones + the color of the player
+        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 54)       # first fully connected layer
         self.fc2 = nn.Linear(54, 54)                        # second fully connected layer
         self.fc3 = nn.Linear(54, 27)                        # third fully connected layer
         
@@ -158,6 +158,8 @@ class Agent:
             policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, self.temp)
             
             # sample from the policy to determine the move to play
+            # self.board.print()
+            # print("policy: ", policy)
             move = np.random.choice(len(policy), p=policy)
             self.board.play_move(move)
             

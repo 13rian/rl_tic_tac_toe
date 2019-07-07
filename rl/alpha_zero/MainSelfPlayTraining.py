@@ -21,16 +21,16 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 400               # the number of epochs to train the neural network
+epoch_count = 200               # the number of epochs to train the neural network
 episode_count = 25             # the number of games that are self-played in one epoch
 test_interval = 100              # epoch intervals at which the network plays against a random player
 test_game_count = 10          # the number of games that are played in the test against the random opponent
 network_duel_game_count = 40    # number of games that are played between the old and the new network
-mcts_sim_count = 25             # the number of simulations for the monte-carlo tree search
+mcts_sim_count = 80             # the number of simulations for the monte-carlo tree search
 c_puct = 1                      # the higher this constant the more the mcts explores
 temp = 1                        # the temperature, controls the policy value distribution
 new_net_win_rate = 0.55         # win rate of the new network in order to replace the old one
-learning_rate = 0.005           # the learning rate of the neural network
+learning_rate = 0.001           # the learning rate of the neural network
 batch_size = 32                 # the batch size of the experience buffer for the neural network training
 exp_buffer_size = episode_count * 9         # the size of the experience replay buffer
 
@@ -77,6 +77,7 @@ for i in range(epoch_count):
     ###### training, train the training network and use the target network for predictions
     # logger.info("start updates in epoch {}".format(i))
     avg_loss = agent.nn_update()
+    print("avg-loss: ", avg_loss.item())
     policy_loss.append(avg_loss.item())
                 
 

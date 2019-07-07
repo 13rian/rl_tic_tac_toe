@@ -78,9 +78,14 @@ net = torch.load("rl/alpha_zero/ticTacToeSelfPlay.pt")
 state, player = board.white_perspective()
 batch = torch.tensor(state, dtype=torch.float32)
 policy, value = net(batch)
-print(policy)
+print(policy.detach().numpy())
 print(value)
 
+
+# calc the policy with mcts
+mcts_test = mcts.MCTS(1)
+policy = mcts_test.policy_values(board, net, 80, 1)
+print("mcts-policy: ", policy)
 
 
 
