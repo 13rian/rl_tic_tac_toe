@@ -174,7 +174,7 @@ class Coach():
         
         
         
-      ################################################### trainng
+    ################################################### trainng
     def train(self, examples):
         """
         examples: list of examples, each example is of form (board, pi, v)

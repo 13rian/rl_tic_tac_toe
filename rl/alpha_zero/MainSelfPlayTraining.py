@@ -21,11 +21,12 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 400               # the number of epochs to train the neural network 100'000 episodes ~ 1h
-episode_count = 100             # the number of games that are self-played in one epoch
-test_interval = 10              # epoch intervals at which the network plays against a random player
-test_game_count = 100          # the number of games that are played in the test against the random opponent
-mcts_sim_count = 80             # the number of simulations for the monte-carlo tree search
+epoch_count = 400               # the number of epochs to train the neural network
+episode_count = 25             # the number of games that are self-played in one epoch
+test_interval = 100              # epoch intervals at which the network plays against a random player
+test_game_count = 10          # the number of games that are played in the test against the random opponent
+network_duel_game_count = 40    # number of games that are played between the old and the new network
+mcts_sim_count = 25             # the number of simulations for the monte-carlo tree search
 c_puct = 1                      # the higher this constant the more the mcts explores
 temp = 1                        # the temperature, controls the policy value distribution
 new_net_win_rate = 0.55         # win rate of the new network in order to replace the old one
@@ -45,6 +46,7 @@ agent = alpha_zero_learning.Agent(learning_rate, mcts_sim_count, c_puct, temp, b
 episodes = []
 fitness_white = []
 fitness_black = []
+policy_loss = []
 
 
 start_training = time.time()
@@ -74,12 +76,13 @@ for i in range(epoch_count):
 
     ###### training, train the training network and use the target network for predictions
     # logger.info("start updates in epoch {}".format(i))
-    agent.nn_update()
+    avg_loss = agent.nn_update()
+    policy_loss.append(avg_loss.item())
                 
 
     ###### let the previous network play against the new network
     # logger.info("sync neural networks in epoch {}".format(i))
-    network_improved = agent.network_duel(new_net_win_rate, test_game_count)
+    network_improved = agent.network_duel(new_net_win_rate, network_duel_game_count)
     if network_improved:
         logger.info("new generation network has improved")
     else:
@@ -92,10 +95,18 @@ training_time = end_training - start_training
 logger.info("elapsed time whole training process {} for {} episodes".format(training_time, epoch_count*episode_count))
 
 # save the currently trained neural network
-torch.save(agent.training_network, "ticTacToeSelfPlay.pt")
+torch.save(agent.old_network, "ticTacToeSelfPlay.pt")
 
 
 # plot the results
+fig1 = plt.figure(1)
+plt.plot(policy_loss)
+plt.title("Average Policy Training Loss")       
+plt.xlabel("Episode")
+plt.ylabel("Policy Loss")
+fig1.show()
+
+
 fig2 = plt.figure(2)
 axes = plt.gca()
 axes.set_ylim([0, 1])

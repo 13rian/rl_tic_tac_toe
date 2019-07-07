@@ -70,7 +70,7 @@ class Network(nn.Module):
         :param batch:           tensor with data [batchSize, nn_input_size]
         :param target_p:        policy target
         :param target_v:        value target
-        :return:                the loss
+        :return:                the policy loss (value is ignored)
         """
 
         self.train()     # allow the weights to be changed
@@ -93,7 +93,7 @@ class Network(nn.Module):
         loss = loss_p + loss_v
         loss.backward()              # back propagation
         self.optimizer.step()        # make one optimization step
-        return loss
+        return loss_p
     
 
 
@@ -185,7 +185,7 @@ class Agent:
     def nn_update(self):
         """
         updates the neural network by using all samples from the experience buffer
-        :return:
+        :return:     the average loss over all training examples
         """
         
         # get all samples in a randomized order
@@ -194,6 +194,7 @@ class Agent:
         policies = policies.to(Globals.device)
         values = values.to(Globals.device)
         
+        avg_loss = 0
         batch_count = int(self.experience_buffer.size / self.batch_size)
         for i in range(batch_count):
             start_index = i * self.batch_size
@@ -204,16 +205,21 @@ class Agent:
             value_batch = values[start_index:end_index, :]
             
             # execute the training step of the network
-            self.new_network.train_step(state_batch, policy_batch, value_batch)
+            loss = self.new_network.train_step(state_batch, policy_batch, value_batch)
+            avg_loss += loss / batch_count
         
             
-        # execute the last update with a smaller batch
-        if end_index < self.experience_buffer.size - 1:
-            state_batch = states[end_index:self.experience_buffer.size - 1, :]
-            policy_batch = policies[end_index:self.experience_buffer.size - 1, :]
-            value_batch = values[end_index:self.experience_buffer.size - 1, :]
-            
-            self.new_network.train_step(state_batch, policy_batch, value_batch)
+#         # execute the last update with a smaller batch
+#         if end_index < self.experience_buffer.size - 1:
+#             state_batch = states[end_index:self.experience_buffer.size - 1, :]
+#             policy_batch = policies[end_index:self.experience_buffer.size - 1, :]
+#             value_batch = values[end_index:self.experience_buffer.size - 1, :]
+#             
+#             self.new_network.train_step(state_batch, policy_batch, value_batch)
+        
+        self.experience_buffer.clear()      # clear the experience buffer
+        
+        return avg_loss
     
     
     def play_against_random(self, color, game_count):
@@ -241,9 +247,8 @@ class Agent:
         win_rate = self.play_against_old_net(game_count)
         print("win rate: ", win_rate)  
         if win_rate >= min_win_rate:
-            self.old_network = self.new_network
-            self.new_network = copy.deepcopy(self.new_network)
-            self.new_network.to(Globals.device)
+            self.old_network = copy.deepcopy(self.new_network)
+            self.old_network.to(Globals.device)
             return True
         
         else:
@@ -332,10 +337,10 @@ class ExperienceBuffer:
         """
         empties the experience buffer
         """
-        self.state = torch.empty(max_size, CONST.NN_INPUT_SIZE)
-        self.player = torch.empty(max_size, 1)
-        self.policy = torch.empty(max_size, CONST.NN_POLICY_SIZE)
-        self.value = torch.empty(max_size, 1)
+        self.state = torch.empty(self.max_size, CONST.NN_INPUT_SIZE)
+        self.player = torch.empty(self.max_size, 1)
+        self.policy = torch.empty(self.max_size, CONST.NN_POLICY_SIZE)
+        self.value = torch.empty(self.max_size, 1)
         
         self.size = 0                  # size of the buffer
         self.ring_index = 0            # current index of where the next sample is added
