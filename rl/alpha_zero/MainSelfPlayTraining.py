@@ -21,8 +21,8 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 200               # the number of epochs to train the neural network
-episode_count = 25             # the number of games that are self-played in one epoch
+epoch_count = 1000               # the number of epochs to train the neural network
+episode_count = 100             # the number of games that are self-played in one epoch
 test_interval = 100              # epoch intervals at which the network plays against a random player
 test_game_count = 10          # the number of games that are played in the test against the random opponent
 network_duel_game_count = 40    # number of games that are played between the old and the new network

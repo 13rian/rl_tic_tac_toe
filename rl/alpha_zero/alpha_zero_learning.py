@@ -84,7 +84,7 @@ class Network(nn.Module):
         # create the label
         target_p = target_p.to(Globals.device)
         target_v = target_v.to(Globals.device)
-        criterion_p = nn.MSELoss()
+        criterion_p = nn.MSELoss()  # F.cross_entropy()
         criterion_v = nn.MSELoss()
          
         # define the loss
@@ -134,7 +134,7 @@ class Agent:
 
     def reset_game(self):
         self.board = tic_tac_toe.BitBoard()
-        self.mcts = MCTS(self.c_puct)
+        self.mcts = MCTS(self.c_puct)           # reset the search tree
         
         # reset the experience lists
         self.state_list = []
