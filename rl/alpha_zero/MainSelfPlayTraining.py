@@ -21,7 +21,7 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 1000               # the number of epochs to train the neural network
+epoch_count = 300               # the number of epochs to train the neural network
 episode_count = 100             # the number of games that are self-played in one epoch
 test_interval = 100              # epoch intervals at which the network plays against a random player
 test_game_count = 10          # the number of games that are played in the test against the random opponent
@@ -96,7 +96,8 @@ training_time = end_training - start_training
 logger.info("elapsed time whole training process {} for {} episodes".format(training_time, epoch_count*episode_count))
 
 # save the currently trained neural network
-torch.save(agent.old_network, "ticTacToeSelfPlay.pt")
+torch.save(agent.old_network, "ticTacToeSelfPlay_old.pt")
+torch.save(agent.new_network, "ticTacToeSelfPlay.pt")
 
 
 # plot the results

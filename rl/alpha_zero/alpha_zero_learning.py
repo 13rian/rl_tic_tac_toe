@@ -152,10 +152,12 @@ class Agent:
         # start a fresh game 
         self.reset_game()
         
-        # play the epsilon greedy move and save the state transition in the experience lists      
+        # play the epsilon greedy move and save the state transition in the experience lists
+        move_count = 0      
         while not self.board.terminal:
             state, player = self.board.white_perspective()
-            policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, self.temp)
+            temp = 0 if move_count < 5 else self.temp
+            policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, temp)
             
             # sample from the policy to determine the move to play
             # self.board.print()
@@ -167,6 +169,7 @@ class Agent:
             self.state_list.append(state)
             self.player_list.append(player)
             self.policy_list.append(policy)
+            move_count += 1
         
         # calculate the values from the perspective of the player who's move it is
         reward = self.board.reward()
