@@ -70,7 +70,7 @@ class Network(nn.Module):
         :param batch:           tensor with data [batchSize, nn_input_size]
         :param target_p:        policy target
         :param target_v:        value target
-        :return:                the policy loss (value is ignored)
+        :return:                policy loss, value loss
         """
 
         self.train()     # allow the weights to be changed
@@ -93,7 +93,7 @@ class Network(nn.Module):
         loss = loss_p + loss_v
         loss.backward()              # back propagation
         self.optimizer.step()        # make one optimization step
-        return loss_p
+        return loss_p, loss_v
     
 
 
@@ -143,8 +143,9 @@ class Agent:
         self.value_list = []
     
 
-    def play_self_play_game(self):
+    def play_self_play_game(self, temp_threshold):
         """
+        :param temp_threshold:  up to this move the temp will be temp, after the threshold it will be set to 0
         plays a game against itself with some exploratory moves in it
         :return:
         """
@@ -156,7 +157,7 @@ class Agent:
         move_count = 0      
         while not self.board.terminal:
             state, player = self.board.white_perspective()
-            temp = 0 if move_count < 5 else self.temp
+            temp = 0 if move_count <= temp_threshold else self.temp
             policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, temp)
             
             # sample from the policy to determine the move to play
@@ -187,44 +188,33 @@ class Agent:
             
 
 
-    def nn_update(self):
+    def nn_update(self, update_count):
         """
-        updates the neural network by using all samples from the experience buffer
-        :return:     the average loss over all training examples
+        updates the neural network by picking a random batch form the experience replay
+        :param update_count:    defines how many time the network is updated
+        :return:                average policy and value loss over all mini batches
         """
-        
-        # get all samples in a randomized order
-        states, policies, values = self.experience_buffer.random_batch(self.experience_buffer.size)
-        states = states.to(Globals.device)
-        policies = policies.to(Globals.device)
-        values = values.to(Globals.device)
-        
-        avg_loss = 0
-        batch_count = int(self.experience_buffer.size / self.batch_size)
-        for i in range(batch_count):
-            start_index = i * self.batch_size
-            end_index = (i+1)*self.batch_size - 1
-            
-            state_batch = states[start_index:end_index, :]
-            policy_batch = policies[start_index:end_index, :]
-            value_batch = values[start_index:end_index, :]
-            
-            # execute the training step of the network
-            loss = self.new_network.train_step(state_batch, policy_batch, value_batch)
-            avg_loss += loss / batch_count
-        
-            
-#         # execute the last update with a smaller batch
-#         if end_index < self.experience_buffer.size - 1:
-#             state_batch = states[end_index:self.experience_buffer.size - 1, :]
-#             policy_batch = policies[end_index:self.experience_buffer.size - 1, :]
-#             value_batch = values[end_index:self.experience_buffer.size - 1, :]
-#             
-#             self.new_network.train_step(state_batch, policy_batch, value_batch)
-        
-        self.experience_buffer.clear()      # clear the experience buffer
-        
-        return avg_loss
+
+        avg_loss_p = 0
+        avg_loss_v = 0
+        for i in range(update_count):
+            # get a random batch
+            states, policies, values = self.experience_buffer.random_batch(self.batch_size)
+            states = states.to(Globals.device)
+            policies = policies.to(Globals.device)
+            values = values.to(Globals.device)
+
+            # train the net with one mini-batch
+            loss_p, loss_v = self.new_network.train_step(states, policies, values)
+            avg_loss_p += loss_p
+            avg_loss_v += loss_v
+
+        # calculate the mean of the loss
+        avg_loss_p /= update_count
+        avg_loss_v /= update_count
+
+        return avg_loss_p.item(), avg_loss_v.item()
+
     
     
     def play_against_random(self, color, game_count):
@@ -336,8 +326,8 @@ class ExperienceBuffer:
         
         self.size = 0                  # size of the buffer
         self.ring_index = 0            # current index of where the next sample is added
-       
-        
+
+
     def clear(self):
         """
         empties the experience buffer
@@ -346,10 +336,10 @@ class ExperienceBuffer:
         self.player = torch.empty(self.max_size, 1)
         self.policy = torch.empty(self.max_size, CONST.NN_POLICY_SIZE)
         self.value = torch.empty(self.max_size, 1)
-        
+
         self.size = 0                  # size of the buffer
         self.ring_index = 0            # current index of where the next sample is added
-        
+
         
         
     def add_batch(self, states, players, policies, values):
