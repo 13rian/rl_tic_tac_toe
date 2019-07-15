@@ -32,17 +32,52 @@ The value function V is approximated by a neural network which takes the board c
 
 The algorithm is given by,
 
-![](documentation/td0_value.png)
+<img src="documentation/td0_learning.png" alt="drawing" width="700"/>
 
 
 The ideas of this approach were taken form:  
 - Reinforcement Learning - An Introduction [book](http://incompleteideas.net/book/bookdraft2017nov5.pdf)    
-- Online [Lectures](https://www.youtube.com/watch?v=kZ_AUmFcZtk&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ&index=10) from David Silver: 
+- Online [Lectures](https://www.youtube.com/watch?v=kZ_AUmFcZtk&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ&index=10) from David Silver
 
 
 
-### TD(&lambda) Learning
+### TD(&lambda;) Learning
 This [paper](https://arxiv.org/abs/1810.09967) introduced a new reinforcement learning algorithm that uses eligibility traces combined with an experience buffer in an efficient way. Because eligibility traces are used learning is much more efficient for longer games. Since Tic Tac Toe is a very short game with a maximum of 9 moves the difference is not that big but for a game like Othello that has a maximum of 60 moves it makes a huge difference. The algorithm was adapted for the self-play context as follows:
 
-![](documentation/dqn_lambda_value.png)   
+<img src="documentation/td_lambda_learning.png" alt="drawing" width="700"/>
 
+
+
+## Algorithms based on the Action Value Function
+The action value function Q(s,a) describes the expected reward given a state and an action. The best action (greedy move) can be found by choosing the action with the maximal action value for white and the minimal action value for black. The action value function V is approximated by a neural network which takes the board configuration as input. The board is represented by a vector of size 18. The first 9 elements are the white pieces and the second 9 elements are the black pieces. The neural network has an vector of size 18 as output. The first 9 elements are the white action values and the second 9 elements are the action values for black. To find the greedy move illegal moves are not considered.  
+
+Theoretically it could be possible to only have 9 action value outputs of the network which corresponds to setting a stone for black or for white. There are two problems with this architecture that's why the architecture of 18 action values was chosen:  
+- In the following board position:  
+. xx  
+. . .  
+. oo  
+it is not obvious what the best move is. If it is x's move the best move would be to play in the upper left corner. If it is o's, the best move is to play in the bottom left corner.  
+- The problem above could be bypassed by representing the board always from the white perspective. If it is whites move the first 9 elements of the vector representing the board are the white disks and the second 9 elements are the black disks as described above. If it is blacks move the white and the black disks are swapped, which means that the first 9 board vector elements are now the black disks and the second 9 elements are the white disks. However, this approach will lead to a different problem. During training the network never loses. The last player who is about to move will always make a winning move or a drawing move. It is not possible to play a move and immediately lose the game without the opponent playing an additional move. The training examples of the neural network would therefore only consist of winning and drawing positions which results in the network not learning properly. 
+
+
+### Q-Learning
+The same strategies as in TD(0) Learning were used:  
+- experience replay
+- separate target and training networks
+- exploratory moves were not considered as training examples
+
+The algorithm is given by,
+
+<img src="documentation/q_learning.png" alt="drawing" width="700"/>
+
+
+The ideas of this approach were taken form:  
+- DQN [paper](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)  
+- Reinforcement Learning - An Introduction [book](http://incompleteideas.net/book/bookdraft2017nov5.pdf)    
+- Online [Lectures](https://www.youtube.com/watch?v=kZ_AUmFcZtk&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ&index=10) from David Silver
+
+
+### DQN(&lambda;)
+The idea of using eligibility traces in deep Q-networks can be found in this [paper](https://arxiv.org/abs/1810.09967). As mentioned above using eligibility traces makes learning is much more efficient for longer games. In Q-learning the reward propagates only one position back. By using eligibility traces the reward is used to update all positions in one episode at once. The algorithm was adapted for the self-play context as follows:
+
+<img src="documentation/dqn_lambda_learning.png" alt="drawing" width="700"/>

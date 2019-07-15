@@ -25,6 +25,7 @@ class MCTS:
         """
         executes mc_sim_count number of monte-carlo simulations to obtain the probability
         vector of the current game position
+        :param board:            the game board
         :param net:              neural network that approximates the policy and the value
         :param mc_sim_count:     number of monte-carlo simulations to perform
         :param temp:             the temperature, determines the degree of exploration
@@ -40,7 +41,7 @@ class MCTS:
             self.tree_search(sim_board, net)
 
         s = board.state_number()
-        counts = [self.N_sa[(s,a)] if (s,a) in self.N_sa else 0 for a in range(CONST.NN_POLICY_SIZE)]
+        counts = [self.N_sa[(s, a)] if (s, a) in self.N_sa else 0 for a in range(CONST.NN_POLICY_SIZE)]
 
         # in order to learn something set the probabilities of the best action to 1 and all other action to 0
         if temp == 0:

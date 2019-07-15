@@ -44,15 +44,16 @@ $ \\
 \pagebreak
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 									DQN(lambda)											  %
+% 									TD(lambda)											  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{DQN($\lambda$)}
+\section{TD($\lambda$)}
 \textbf{procedure} REFRESH($l$) \\
 \indent \textbf{For} transition $(s_t, s_{t+1}, r_t, R_t^\lambda, a_t)$ $\in l$ processing back-to-front \textbf{Do} \\
 \indent \indent \textbf{If} terminal($s_{t+1}$) \textbf{Then} \\
-\indent \indent \indent Update $R_t^\lambda \leftarrow r_t + \gamma [\gamma R_{t+1}^\lambda + (1 - \lambda) V(s_{t+1}, \theta)]$ \\
+\indent \indent \indent Update $R_t^\lambda \leftarrow r_t$ \\
 \indent \indent \textbf{Else} \\
 \indent \indent \indent Get adjacent transition $(s_{t+1}, s_{t+2}, r_{t+1}, R_{t+1}^\lambda, a_{t+1})$ from $l$ \\
+\indent \indent \indent Update $R_t^\lambda \leftarrow r_t + \gamma [\gamma R_{t+1}^\lambda + (1 - \lambda) V(s_{t+1}, \theta)]$ \\
 \indent \indent \textbf{End If} \\
 \indent \textbf{End For} \\
 \textbf{End procedure} \\
@@ -64,9 +65,9 @@ $ \\
 $
 a_t= 
 \begin{cases}
-\text{random move} 									& \text{with probability } \epsilon \\
-\text{argmax}_a \tilde{V}(succ(s_t, a), \theta)     & \text{for white} \\
-\text{argmin}_a \tilde{V}(succ(s_t, a), \theta)     & \text{for black}
+\text{random move} 							& \text{with probability } \epsilon \\
+\text{argmax}_a V(succ(s_t, a), \theta)     & \text{for white} \\
+\text{argmin}_a V(succ(s_t, a), \theta)     & \text{for black}
 \end{cases}
 $ \\
 \indent \indent Receive reward $r_t$  \\
@@ -82,6 +83,99 @@ $ \\
 \textbf{End For} \\
 
 \noindent $\gamma$ is the discount factor and $\theta$ the neural network parameters.
+
+\pagebreak
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 										Q-Learning										  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Q-Learning}
+
+\textbf{For} episode = 1, M \textbf{do} \\
+\indent Initialize a fresh game \\
+\indent \textbf {For} t = 1, T \textbf{do} \\
+\indent \indent Play move
+$
+a_t= 
+\begin{cases}
+\text{random move} 							  & \text{with probability } \epsilon \\
+\text{argmax}_a \tilde{Q}(s_t, a, \theta)     & \text{for white} \\
+\text{argmin}_a \tilde{Q}(s_t, a, \theta)     & \text{for black}
+\end{cases}
+$ \\
+\indent \indent Receive reward $r_t$  \\
+\indent \indent Store the transition $(s_t, s_{t+1}, r_t, a_t)$ in the replay buffer $D$ \\
+\indent \indent Sample a random minibatch transition from $D$  \\
+\indent \indent Set the target: 
+$
+y_t= 
+\begin{cases}
+r_t 										& \text{if game terminates at step } t+1 \\
+r_{t} + \gamma \text{max}_{a'}\tilde{Q}(s_{t+1}, a', \theta)   & \text{otherwise} \\
+\end{cases}
+$ \\
+\indent \indent Perform a stochastic gradient decent step on $[y_t - Q(s_t, a_t, \theta)]^2$ with respect to $\theta$  \\
+\indent \indent Every $c$ steps set $\tilde{Q} = Q$   \\
+\indent  \textbf {End For}  \\
+\textbf {End For} \\
+
+\noindent $\gamma$ is the discount factor and $\theta$ the neural network parameters.
+
+\pagebreak
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 									DQN(lambda)											  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{DQN($\lambda$)}
+\textbf{procedure} REFRESH($l$) \\
+\indent \textbf{For} transition $(s_t, s_{t+1}, r_t, R_t^\lambda, a_t)$ $\in l$ processing back-to-front \textbf{Do} \\
+\indent \indent \textbf{If} terminal($s_{t+1}$) \textbf{Then} \\
+\indent \indent \indent Update $R_t^\lambda \leftarrow r_t$ \\
+\indent \indent \textbf{Else} \\
+\indent \indent \indent Get adjacent transition $(s_{t+1}, s_{t+2}, r_{t+1}, R_{t+1}^\lambda, a_{t+1})$ from $l$ \\
+\indent \indent \indent Update $R_t^\lambda \leftarrow r_t + \gamma [\gamma R_{t+1}^\lambda + (1 - \lambda) \text{max}_{a'}Q(s_{t+1}, a', \theta)]$ \\
+\indent \indent \textbf{End If} \\
+\indent \textbf{End For} \\
+\textbf{End procedure} \\
+\\
+\textbf{For} episode = 1, M \textbf{do} \\
+\indent Initialize a fresh game \\
+\indent \textbf {For} t = 1, T \textbf{do} \\
+\indent \indent Play move
+$
+a_t= 
+\begin{cases}
+\text{random move} 									& \text{with probability } \epsilon \\
+\text{argmax}_a Q(s_t, a, \theta)     & \text{for white} \\
+\text{argmin}_a Q(s_t, a, \theta)     & \text{for black}
+\end{cases}
+$ \\
+\indent \indent Receive reward $r_t$  \\
+\indent \indent Append the transition $(s_t, s_{t+1}, r_t,  R_t^\lambda, a_t)$ to $L$, where $R_t^\lambda$ is arbitrary\\
+\indent \indent \textbf{If} terminal($s_{t+1}$) \textbf{Then} \\
+\indent \indent \indent REFRESH($L$) \\
+\indent \indent \indent Store $L$ in D \\
+\indent \indent \textbf{End If} \\
+\indent \indent Sample a random minibatch transition from $D$  \\
+\indent \indent Perform a stochastic gradient decent step on $[R_t^\lambda - Q(s_t, a_t, \theta)]^2$ with respect to $\theta$  \\
+\indent \indent Every $c$ steps REFRESH($D$)   \\
+\indent  \textbf{End For}  \\
+\textbf{End For} \\
+
+\noindent $\gamma$ is the discount factor and $\theta$ the neural network parameters.
+
+\pagebreak
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 									AlphaZero											  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{AlphaZero}
+
 
 \pagebreak
 
