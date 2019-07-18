@@ -1,4 +1,3 @@
-import numpy as np
 
 class CONST:
 	EMPTY = 0 				# no disk

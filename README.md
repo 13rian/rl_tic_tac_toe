@@ -81,3 +81,7 @@ The ideas of this approach were taken form:
 The idea of using eligibility traces in deep Q-networks can be found in this [paper](https://arxiv.org/abs/1810.09967). As mentioned above using eligibility traces makes learning is much more efficient for longer games. In Q-learning the reward propagates only one position back. By using eligibility traces the reward is used to update all positions in one episode at once. The algorithm was adapted for the self-play context as follows:
 
 <img src="documentation/dqn_lambda_learning.png" alt="drawing" width="700"/>
+
+
+
+### AlphaZero

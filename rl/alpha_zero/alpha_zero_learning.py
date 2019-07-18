@@ -272,11 +272,11 @@ class Agent:
             while not board.terminal:
                 if board.player == CONST.WHITE:
                     policy = mcts_old.policy_values(board, self.old_network, self.mcts_sim_count, 0)
-                    move = np.where(policy==1)[0] 
+                    move = np.where(policy == 1)[0]
                     board.play_move(move)
                 else:
                     policy = mcts_new.policy_values(board, self.new_network, self.mcts_sim_count, 0)
-                    move = np.where(policy==1)[0] 
+                    move = np.where(policy == 1)[0]
                     board.play_move(move)
         
                 # board.print()
@@ -285,8 +285,8 @@ class Agent:
                 
             if board.reward() == -1:
                 wins_new_net += 1
-                
-        
+
+
         # play half the games where the new network is white
         for _ in range(half_game_count):
             board = tic_tac_toe.BitBoard()

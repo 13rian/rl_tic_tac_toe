@@ -468,7 +468,7 @@ def az_net_against_random(net, network_color, c_puct, mcts_sim_count, game_count
         while not board.terminal:
             if board.player == network_color:
                 policy = mcts_agent.policy_values(board, net, mcts_sim_count, 0)
-                move = np.where(policy==1)[0][0] 
+                move = np.where(policy == 1)[0][0]
                 board.play_move(move)
             else:
                 move = board.random_move()
