@@ -157,7 +157,7 @@ class Agent:
         move_count = 0      
         while not self.board.terminal:
             state, player = self.board.white_perspective()
-            temp = 0 if move_count <= temp_threshold else self.temp
+            temp = 0 if move_count >= temp_threshold else self.temp
             policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, temp)
             
             # sample from the policy to determine the move to play
