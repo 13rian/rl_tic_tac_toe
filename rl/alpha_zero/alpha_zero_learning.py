@@ -28,7 +28,8 @@ class Network(nn.Module):
         self.fc4v = nn.Linear(27, 1)                        # approximation for the value function V(s)
 
         # define the optimizer
-        self.optimizer = optim.SGD(self.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        # self.optimizer = optim.SGD(self.parameters(), lr=learning_rate, momentum=momentum)
         
         # randomly initialize all the weights
         mean = 0
@@ -130,6 +131,10 @@ class Agent:
         # send the network to the configured device
         self.old_network.to(Globals.device)
         self.new_network.to(Globals.device)
+
+
+    def clear_exp_buffer(self):
+        self.experience_buffer.clear()
 
 
     def reset_game(self):

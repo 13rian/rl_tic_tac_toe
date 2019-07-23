@@ -1,4 +1,5 @@
 import random
+import copy
 
 import numpy as np
 import torch
@@ -38,15 +39,7 @@ class BitBoard:
         returns a new board with the same state
         :return:
         """
-        board = BitBoard()
-        board.white_player = self.white_player
-        board.black_player = self.black_player
-        
-        board.player = self.player
-        board.terminal = self.terminal
-        board.score = self.score
-        board.legal_moves = self.legal_moves.copy()
-        
+        board = copy.deepcopy(self)
         return board
         
     
