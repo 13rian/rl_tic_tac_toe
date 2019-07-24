@@ -20,7 +20,7 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 100                   # the number of epochs to train the neural network
+epoch_count = 170                   # the number of epochs to train the neural network
 episode_count = 100                 # the number of games that are self-played in one epoch
 update_count = 10                   # the number the neural net is updated  in one epoch with the experience data
 network_duel_game_count = 40        # number of games that are played between the old and the new network
@@ -31,7 +31,7 @@ temp_threshold = 5                  # up to this move the temp will be temp, oth
 new_net_win_rate = 0.55             # win rate of the new network in order to replace the old one
 learning_rate = 0.005                 # the learning rate of the neural network
 batch_size = 128                    # the batch size of the experience buffer for the neural network training
-exp_buffer_size = 9*episode_count   # the size of the experience replay buffer
+exp_buffer_size = 2*9*episode_count   # the size of the experience replay buffer
 
 # define the devices for the training and the target networks     cpu or cuda, here cpu is way faster for small nets
 Globals.device = torch.device('cpu')
@@ -63,7 +63,7 @@ for i in range(epoch_count):
     value_loss.append(loss_v)
     print("policy loss: ", loss_p)
     print("value loss: ", loss_v)
-    agent.clear_exp_buffer()            # clear the experience buffer
+    # agent.clear_exp_buffer()            # clear the experience buffer
 
     ###### let the previous network play against the new network
     logger.info("start neural networks duel in epoch {}".format(i))

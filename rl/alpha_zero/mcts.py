@@ -139,8 +139,3 @@ class MCTS:
         
         self.N_s[s] += 1
         return v
-    
-    
-    
-    
-    
