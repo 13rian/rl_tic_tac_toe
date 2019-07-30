@@ -8,6 +8,7 @@ from utils import utils
 from game.globals import CONST
 from game.globals import Globals
 from rl.alpha_zero import mcts
+from game import minimax
 
 
 class BitBoard:
@@ -20,7 +21,6 @@ class BitBoard:
     a move is defined by a number, e.g. 4 (this represents setting a stone on the board position 4)
     """
 
-    # initializes the board to the starting configuration
     def __init__(self):
         self.white_player = 0
         self.black_player = 0
@@ -182,6 +182,8 @@ class BitBoard:
         :param move:    integer that defines the position to set the stone
         :return:
         """
+        # if move not in self.legal_moves:
+        #     print("move not in list")
 
         # set the token
         if self.player == CONST.WHITE:
@@ -291,6 +293,16 @@ class BitBoard:
             return 0        
         else:
             return self.score
+
+
+    def white_score(self):
+        reward = self.reward()
+        return (reward + 1) / 2
+
+
+    def black_score(self):
+        reward = self.reward()
+        return (-reward + 1) / 2
         
 
     def all_after_states(self):
@@ -376,7 +388,34 @@ class BitBoard:
 
         greedy_move = self.legal_moves[index]
         return greedy_move, value
-    
+
+
+    def minimax_move(self):
+        """
+        returns the optimal minimax move, if there are more than one optimal moves, a ranodm one is
+        picked
+        :return:
+        """
+
+        # get the white score for all legal moves
+        score_list = np.empty(len(self.legal_moves))
+        for idx, move in enumerate(self.legal_moves):
+            board_clone = self.clone()
+            board_clone.play_move(move)
+            state = board_clone.state_number()
+            white_score = minimax.state_dict.get(state)
+            score_list[idx] = white_score
+
+        # find the indices of the max score for white and the min score for black
+        if self.player == CONST.WHITE:
+            move_indices = np.argwhere(score_list == np.amax(score_list))
+        else:
+            move_indices = np.argwhere(score_list == np.amin(score_list))
+
+        move_indices = move_indices.squeeze(axis=1)
+        best_moves = np.array(self.legal_moves)[move_indices]
+        best_move = np.random.choice(best_moves, 1)
+        return int(best_move)
 
 
 
@@ -476,6 +515,38 @@ def az_net_against_random(net, network_color, c_puct, mcts_sim_count, game_count
     return score / game_count
 
 
+def az_net_against_minimax(net, network_color, c_puct, mcts_sim_count, game_count):
+    """
+    let the alpha zero network play against an optimal minimax player
+    :param net:             the trained network
+    :param network_color:   the color of the network
+    :param c_puct:          constant that controls the exploration in the mcts
+    :param mcts_sim_count:  number of simulations in the mcts
+    :param game_count:      the number of games to play
+    :return:                the fraction of point the network got against a random player
+    """
+
+    score = 0
+    for _ in range(game_count):
+        board = BitBoard()
+        mcts_agent = mcts.MCTS(c_puct)
+        while not board.terminal:
+            if board.player == network_color:
+                policy = mcts_agent.policy_values(board, net, mcts_sim_count, 0)
+                move = np.where(policy == 1)[0][0]
+                board.play_move(move)
+            else:
+                minimax_move = board.minimax_move()
+                board.play_move(minimax_move)
+
+            # board.print()
+
+        network_score = board.reward() if network_color == CONST.WHITE else -board.reward()
+        network_score = (network_score + 1) / 2
+        score += network_score
+
+    return score / game_count
+
 
 def play_random_vs_random(game_count):
     score_white = 0
@@ -490,3 +561,56 @@ def play_random_vs_random(game_count):
         score_white += score
 
     return score_white / game_count
+
+
+def play_minimax_vs_random(game_count, minimax_color):
+    """
+    the optimal minimax player plays against a random plyer
+    :param game_count:      number of games to play
+    :param minimax_color:   the color of the minimax player
+    :return:                the score of the minimax player
+    """
+    minimax.fill_state_dict()       # ensure that the state dict is filled
+
+    score = 0
+    for _ in range(game_count):
+        board = BitBoard()
+        while not board.terminal:
+            if board.player == minimax_color:
+                minimax_move = board.minimax_move()
+                board.play_move(minimax_move)
+            else:
+                move = board.random_move()
+                board.play_move(move)
+
+            # board.print()
+
+        minimax_score = board.reward() if minimax_color == CONST.WHITE else -board.reward()
+        minimax_score = (minimax_score + 1) / 2
+        score += minimax_score
+
+    return score / game_count
+
+
+def play_minimax_vs_minimax(game_count):
+    """
+    the optimal minimax player plays against another optimal minimax player.
+    the score should always be 0.5 as both players play only best moves
+    :param game_count:      number of games to play
+    :return:                the score of the white minimax player
+    """
+    minimax.fill_state_dict()       # ensure that the state dict is filled
+
+    score_white = 0
+    for _ in range(game_count):
+        board = BitBoard()
+        while not board.terminal:
+            minimax_move = board.minimax_move()
+            board.play_move(minimax_move)
+
+        score = board.reward()
+        score = (score + 1) / 2
+        score_white += score
+
+    return score_white / game_count
+

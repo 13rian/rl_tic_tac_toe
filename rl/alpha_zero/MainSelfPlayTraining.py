@@ -3,6 +3,8 @@ import torch
 import random
 import time
 import logging
+import os
+import shutil
 
 from utils import utils
 
@@ -32,13 +34,24 @@ new_net_win_rate = 0.55             # win rate of the new network in order to re
 learning_rate = 0.005                 # the learning rate of the neural network
 batch_size = 128                    # the batch size of the experience buffer for the neural network training
 exp_buffer_size = 2*9*episode_count   # the size of the experience replay buffer
+network_dir = "networks/"           # directory in which the networks are saved
 
 # define the devices for the training and the target networks     cpu or cuda, here cpu is way faster for small nets
 Globals.device = torch.device('cpu')
 
 
+# setup the directories for the different network generations
+if not os.path.exists("networks"):
+    os.makedirs(network_dir)
+shutil.rmtree(network_dir)
+os.makedirs(network_dir)
+
+gen_count = 0       # counter for the network generation
+
 # create the agent
 agent = alpha_zero_learning.Agent(learning_rate, mcts_sim_count, c_puct, temp, batch_size, exp_buffer_size)
+torch.save(agent.old_network, "{}/network_gen_{}.pt".format(network_dir, gen_count))   # save the generation 0 network
+gen_count += 1
 
 
 # to plot the fitness
@@ -70,6 +83,10 @@ for i in range(epoch_count):
     network_improved = agent.network_duel(new_net_win_rate, network_duel_game_count)
     if network_improved:
         logger.info("new generation network has improved")
+
+        # save the new network
+        torch.save(agent.new_network, "networks/network_gen_{}.pt".format(gen_count))
+        gen_count += 1
     else:
         logger.info("new generation network has not improved")
 
@@ -78,15 +95,33 @@ end_training = time.time()
 training_time = end_training - start_training
 logger.info("elapsed time whole training process {} for {} episodes".format(training_time, epoch_count*episode_count))
 
-# save the currently trained neural network
-torch.save(agent.old_network, "ticTacToeSelfPlay_old.pt")
-torch.save(agent.new_network, "ticTacToeSelfPlay.pt")
+
+
+# let the different networks play against each other
+generation = []
+avg_score = []
+path_list = os.listdir(network_dir)
+path_list.sort(key=utils.natural_keys)
+
+# get the best network
+best_network_path = network_dir + path_list[-1]
+best_net = torch.load(best_network_path).to(Globals.device)
+for i in range(len(path_list)):
+    generation.append(i)
+    net_path = network_dir + path_list[i]
+    net = torch.load(net_path).to(Globals.device)
+
+    logger.info("play {} against the best network {}".format(net_path, best_network_path))
+    # random_net = alpha_zero_learning.Network(learning_rate)
+    best_net_score, net_score = alpha_zero_learning.net_vs_net(best_net, net, network_duel_game_count, mcts_sim_count, c_puct, 0)
+    avg_score.append(net_score/network_duel_game_count)
+
+
 
 
 # plot the value training loss
 fig1 = plt.figure(1)
 plt.plot(value_loss)
-plt.legend(loc='best')
 plt.title("Average Value Training Loss")
 plt.xlabel("Episode")
 plt.ylabel("Value Loss")
@@ -95,11 +130,21 @@ fig1.show()
 # plot the training policy loss
 fig2 = plt.figure(2)
 plt.plot(policy_loss)
-plt.legend(loc='best')
 plt.title("Average Policy Training Loss")
 plt.xlabel("Episode")
 plt.ylabel("Policy Loss")
 fig2.show()
+
+
+# plot the score of the different generation network against the best network
+fig3 = plt.figure(3)
+plt.plot(generation, avg_score, color="#9ef3f3")
+axes = plt.gca()
+axes.set_ylim([0, 1])
+plt.title("Average Score Against Best Network")
+plt.xlabel("Generation")
+plt.ylabel("Average Score")
+fig3.show()
 
 plt.show()
 

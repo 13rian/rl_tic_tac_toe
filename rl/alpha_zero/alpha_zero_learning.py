@@ -8,6 +8,7 @@ import torch.optim as optim
 
 from game import tic_tac_toe
 from game.globals import Globals, CONST
+from game import minimax
 from rl.alpha_zero.mcts import MCTS
 from rl.alpha_zero import mcts
 
@@ -259,65 +260,13 @@ class Agent:
         """
         lets the training network play against the previous generation
         :param game_count:        number of games the old and the new network play against each other
-        :param c_puct:            constant that controls the exploration rate of the mcts
-        :param mcts_sim_count:    number of monte-carlo tree search simulations
-        :return:         
+        :return:                  the win rate
         """
 
-        half_game_count = int(game_count/2)
-        wins_old_net = 0
-        wins_new_net = 0
-         
-        # play half the games where the old network is white
-        board = tic_tac_toe.BitBoard()
-        mcts_old = mcts.MCTS(self.c_puct)
-        mcts_new = mcts.MCTS(self.c_puct)
-        for _ in range(half_game_count):
-            board = tic_tac_toe.BitBoard()
-            while not board.terminal:
-                if board.player == CONST.WHITE:
-                    policy = mcts_old.policy_values(board, self.old_network, self.mcts_sim_count, 0)
-                    move = np.where(policy == 1)[0]
-                    board.play_move(move)
-                else:
-                    policy = mcts_new.policy_values(board, self.new_network, self.mcts_sim_count, 0)
-                    move = np.where(policy == 1)[0]
-                    board.play_move(move)
-        
-                # board.print()
-            if board.reward() == 1:
-                wins_old_net += 1
-                
-            if board.reward() == -1:
-                wins_new_net += 1
+        score_old, score_new = net_vs_net(self.old_network, self.new_network, game_count, self.mcts_sim_count, self.c_puct, 0)
+        win_rate = score_new / (score_old + score_new)
+        return win_rate
 
-
-        # play half the games where the new network is white
-        for _ in range(half_game_count):
-            board = tic_tac_toe.BitBoard()
-            while not board.terminal:
-                if board.player == CONST.WHITE:
-                    policy = mcts_new.policy_values(board, self.new_network, self.mcts_sim_count, 0)
-                    move = np.where(policy==1)[0] 
-                    board.play_move(move)
-                else:
-                    policy = mcts_old.policy_values(board, self.old_network, self.mcts_sim_count, 0)
-                    move = np.where(policy==1)[0] 
-                    board.play_move(move)
-            
-                # board.print()
-            if board.reward() == 1:
-                wins_new_net += 1
-                
-            if board.reward() == -1:
-                wins_old_net += 1
-                
-        if wins_new_net == 0:
-            return 0
-        else:
-            return wins_new_net / (wins_new_net + wins_old_net)       
-
-    
      
 
 class ExperienceBuffer:
@@ -405,3 +354,103 @@ class ExperienceBuffer:
         sample_size = batch_size if self.size > batch_size else self.size
         idx = np.random.choice(self.size, sample_size, replace=False)
         return self.state[idx, :], self.policy[idx, :], self.value[idx]
+
+
+def net_vs_net(net1, net2, game_count, mcts_sim_count, c_puct, temp):
+    """
+    lets two alpha zero networks play against each other
+    :param net1:            net for player 1
+    :param net2:            net for player 2
+    :param game_count:      total games to play
+    :param mcts_sim_count   number of monte carlo simulations
+    :param c_puct           constant that controls the exploration
+    :param temp             the temperature
+    :return:                score of network1, score of network2
+    """
+
+    half_game_count = int(game_count / 2)
+    net1_score = 0
+    net2_score = 0
+
+    mcts1 = mcts.MCTS(c_puct)
+    mcts2 = mcts.MCTS(c_puct)
+    for _ in range(half_game_count):
+        # play half the games where net1 is white
+        board = tic_tac_toe.BitBoard()
+        while not board.terminal:
+            if board.player == CONST.WHITE:
+                policy = mcts1.policy_values(board, net1, mcts_sim_count, temp)
+            else:
+                policy = mcts2.policy_values(board, net2, mcts_sim_count, temp)
+
+            move = np.where(policy == 1)[0]
+            board.play_move(move)
+
+            # board.print()
+        net1_score += board.white_score()
+        net2_score += board.black_score()
+
+
+        # play half the games where the new network is white
+        board = tic_tac_toe.BitBoard()
+        while not board.terminal:
+            if board.player == CONST.WHITE:
+                policy = mcts2.policy_values(board, net2, mcts_sim_count, temp)
+            else:
+                policy = mcts1.policy_values(board, net1, mcts_sim_count, temp)
+
+            move = np.where(policy == 1)[0]
+            board.play_move(move)
+
+        net1_score += board.black_score()
+        net2_score += board.white_score()
+
+    return net1_score, net2_score
+
+
+def net_vs_minimax(net, game_count, mcts_sim_count, c_puct, temp):
+    """
+    lets the alpha zero network play against a minimax player
+    :param net:             alpha zero network
+    :param game_count:      total games to play
+    :param mcts_sim_count   number of monte carlo simulations
+    :param c_puct           constant that controls the exploration
+    :param temp             the temperature
+    :return:                score of network
+    """
+    minimax.fill_state_dict()  # ensure that the state dict is filled
+
+    half_game_count = int(game_count / 2)
+    score = 0
+
+    mcts_net = mcts.MCTS(c_puct)
+    for _ in range(half_game_count):
+        # play half the games where the net is white
+        board = tic_tac_toe.BitBoard()
+        while not board.terminal:
+            if board.player == CONST.WHITE:
+                policy = mcts_net.policy_values(board, net, mcts_sim_count, temp)
+                move = np.where(policy == 1)[0]
+            else:
+                move = board.minimax_move()
+
+            board.play_move(move)
+
+            # board.print()
+        score += board.white_score()
+
+
+        # play half the games where the net is black
+        board = tic_tac_toe.BitBoard()
+        while not board.terminal:
+            if board.player == CONST.WHITE:
+                move = board.minimax_move()
+            else:
+                policy = mcts_net.policy_values(board, net, mcts_sim_count, temp)
+                move = np.where(policy == 1)[0]
+
+            board.play_move(move)
+
+        score += board.black_score()
+
+    return score

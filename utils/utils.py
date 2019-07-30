@@ -4,6 +4,7 @@ import sys
 import cProfile
 import io
 import pstats
+import re
 
 
 def init_logger(level, **kwargs):
@@ -81,3 +82,18 @@ def bit_not(n, bit_length):
     :return:
     """
     return (1 << bit_length) - 1 - n
+
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+
+def natural_keys(text):
+    """
+    sort function for natural sort, this will sort strings like this
+    "something1", "something12", "something17", "something2", "something25"
+    use it like this:  list.sort(key=natural_keys)
+    :param text:
+    :return:
+    """
+    return [atoi(c) for c in re.split(r'(\d+)', text)]
