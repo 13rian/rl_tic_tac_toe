@@ -22,10 +22,10 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 170                   # the number of epochs to train the neural network
+epoch_count = 100                   # the number of epochs to train the neural network
 episode_count = 100                 # the number of games that are self-played in one epoch
 update_count = 10                   # the number the neural net is updated  in one epoch with the experience data
-network_duel_game_count = 40        # number of games that are played between the old and the new network
+network_duel_game_count = 100        # number of games that are played between the old and the new network
 mcts_sim_count = 15                 # the number of simulations for the monte-carlo tree search
 c_puct = 1                          # the higher this constant the more the mcts explores
 temp = 1                            # the temperature, controls the policy value distribution
@@ -97,9 +97,11 @@ logger.info("elapsed time whole training process {} for {} episodes".format(trai
 
 
 
-# let the different networks play against each other
+# let the different networks play against each other and a minimax player
 generation = []
-avg_score = []
+avg_score_nm = []
+avg_score_nn = []
+
 path_list = os.listdir(network_dir)
 path_list.sort(key=utils.natural_keys)
 
@@ -111,11 +113,12 @@ for i in range(len(path_list)):
     net_path = network_dir + path_list[i]
     net = torch.load(net_path).to(Globals.device)
 
-    logger.info("play {} against the best network {}".format(net_path, best_network_path))
-    # random_net = alpha_zero_learning.Network(learning_rate)
-    best_net_score, net_score = alpha_zero_learning.net_vs_net(best_net, net, network_duel_game_count, mcts_sim_count, c_puct, 0)
-    avg_score.append(net_score/network_duel_game_count)
+    logger.info("play {} against the best network and minimax".format(net_path))
+    net_score = alpha_zero_learning.net_vs_minimax(net, network_duel_game_count, mcts_sim_count, c_puct, 0)
+    avg_score_nm.append(net_score)
 
+    net_score = alpha_zero_learning.net_vs_net(net, best_net, network_duel_game_count, mcts_sim_count, c_puct, 0)
+    avg_score_nn.append(net_score)
 
 
 
@@ -136,15 +139,18 @@ plt.ylabel("Policy Loss")
 fig2.show()
 
 
-# plot the score of the different generation network against the best network
+# plot the score of the different generation network against the best network and the minimax player
 fig3 = plt.figure(3)
-plt.plot(generation, avg_score, color="#9ef3f3")
+plt.plot(generation, avg_score_nm, label="net vs minimax")
+plt.plot(generation, avg_score_nn, label="net vs best net")
+plt.legend(loc='best')
 axes = plt.gca()
 axes.set_ylim([0, 1])
-plt.title("Average Score Against Best Network")
+plt.title("Average Score Against Minimax and Best Network")
 plt.xlabel("Generation")
 plt.ylabel("Average Score")
 fig3.show()
+
 
 plt.show()
 

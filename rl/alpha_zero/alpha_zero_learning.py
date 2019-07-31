@@ -8,9 +8,8 @@ import torch.optim as optim
 
 from game import tic_tac_toe
 from game.globals import Globals, CONST
-from game import minimax
+from game import tournament
 from rl.alpha_zero.mcts import MCTS
-from rl.alpha_zero import mcts
 
 
 
@@ -18,15 +17,15 @@ class Network(nn.Module):
     def __init__(self, learning_rate):
         super(Network, self).__init__()
                 
-        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 54)       # first fully connected layer
-        self.fc2 = nn.Linear(54, 54)                        # second fully connected layer
-        self.fc3 = nn.Linear(54, 27)                        # third fully connected layer
+        self.fc1 = nn.Linear(CONST.NN_INPUT_SIZE, 256)       # first fully connected layer
+        self.fc2 = nn.Linear(256, 128)                       # second fully connected layer
+        self.fc3 = nn.Linear(128, 64)                        # third fully connected layer
         
         # policy head
-        self.fc4p = nn.Linear(27, CONST.NN_POLICY_SIZE)     # approximation for the action value function Q(s, a)
+        self.fc4p = nn.Linear(64, CONST.NN_POLICY_SIZE)      # approximation for the action value function Q(s, a)
         
         # value head
-        self.fc4v = nn.Linear(27, 1)                        # approximation for the value function V(s)
+        self.fc4v = nn.Linear(64, 1)                         # approximation for the value function V(s)
 
         # define the optimizer
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
@@ -230,8 +229,9 @@ class Agent:
         :param game_count:      the number of games that are played
         :return:                the mean score against the random player 0: lose, 0.5 draw, 1: win
         """
-
-        score = tic_tac_toe.az_net_against_random(self.old_network, color, self.c_puct, self.mcts_sim_count, game_count)
+        az_player = tournament.AlphaZeroPlayer(self.old_network, self.c_puct, self.mcts_sim_count, 0)
+        random_player = tournament.RandomPlayer()
+        score = tournament.play_one_color(game_count, az_player, color, random_player)
         return score
     
     
@@ -263,9 +263,8 @@ class Agent:
         :return:                  the win rate
         """
 
-        score_old, score_new = net_vs_net(self.old_network, self.new_network, game_count, self.mcts_sim_count, self.c_puct, 0)
-        win_rate = score_new / (score_old + score_new)
-        return win_rate
+        score_new = net_vs_net(self.new_network, self.old_network, game_count, self.mcts_sim_count, self.c_puct, 0)
+        return score_new
 
      
 
@@ -365,47 +364,14 @@ def net_vs_net(net1, net2, game_count, mcts_sim_count, c_puct, temp):
     :param mcts_sim_count   number of monte carlo simulations
     :param c_puct           constant that controls the exploration
     :param temp             the temperature
-    :return:                score of network1, score of network2
+    :return:                score of network1
     """
 
-    half_game_count = int(game_count / 2)
-    net1_score = 0
-    net2_score = 0
+    az_player1 = tournament.AlphaZeroPlayer(net1, c_puct, mcts_sim_count, temp)
+    az_player2 = tournament.AlphaZeroPlayer(net2, c_puct, mcts_sim_count, temp)
+    score1 = tournament.play_match(game_count, az_player1, az_player2)
+    return score1
 
-    mcts1 = mcts.MCTS(c_puct)
-    mcts2 = mcts.MCTS(c_puct)
-    for _ in range(half_game_count):
-        # play half the games where net1 is white
-        board = tic_tac_toe.BitBoard()
-        while not board.terminal:
-            if board.player == CONST.WHITE:
-                policy = mcts1.policy_values(board, net1, mcts_sim_count, temp)
-            else:
-                policy = mcts2.policy_values(board, net2, mcts_sim_count, temp)
-
-            move = np.where(policy == 1)[0]
-            board.play_move(move)
-
-            # board.print()
-        net1_score += board.white_score()
-        net2_score += board.black_score()
-
-
-        # play half the games where the new network is white
-        board = tic_tac_toe.BitBoard()
-        while not board.terminal:
-            if board.player == CONST.WHITE:
-                policy = mcts2.policy_values(board, net2, mcts_sim_count, temp)
-            else:
-                policy = mcts1.policy_values(board, net1, mcts_sim_count, temp)
-
-            move = np.where(policy == 1)[0]
-            board.play_move(move)
-
-        net1_score += board.black_score()
-        net2_score += board.white_score()
-
-    return net1_score, net2_score
 
 
 def net_vs_minimax(net, game_count, mcts_sim_count, c_puct, temp):
@@ -418,39 +384,8 @@ def net_vs_minimax(net, game_count, mcts_sim_count, c_puct, temp):
     :param temp             the temperature
     :return:                score of network
     """
-    minimax.fill_state_dict()  # ensure that the state dict is filled
 
-    half_game_count = int(game_count / 2)
-    score = 0
-
-    mcts_net = mcts.MCTS(c_puct)
-    for _ in range(half_game_count):
-        # play half the games where the net is white
-        board = tic_tac_toe.BitBoard()
-        while not board.terminal:
-            if board.player == CONST.WHITE:
-                policy = mcts_net.policy_values(board, net, mcts_sim_count, temp)
-                move = np.where(policy == 1)[0]
-            else:
-                move = board.minimax_move()
-
-            board.play_move(move)
-
-            # board.print()
-        score += board.white_score()
-
-
-        # play half the games where the net is black
-        board = tic_tac_toe.BitBoard()
-        while not board.terminal:
-            if board.player == CONST.WHITE:
-                move = board.minimax_move()
-            else:
-                policy = mcts_net.policy_values(board, net, mcts_sim_count, temp)
-                move = np.where(policy == 1)[0]
-
-            board.play_move(move)
-
-        score += board.black_score()
-
-    return score
+    az_player = tournament.AlphaZeroPlayer(net, c_puct, mcts_sim_count, temp)
+    minimax_player = tournament.MinimaxPlayer()
+    az_score = tournament.play_match(game_count, az_player, minimax_player)
+    return az_score

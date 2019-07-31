@@ -17,8 +17,8 @@ random.seed(a=None, version=2)
 epoch_count = 170                   # the number of epochs to train the neural network
 episode_count = 100                 # the number of games that are self-played in one epoch
 update_count = 10                   # the number the neural net is updated  in one epoch with the experience data
-network_duel_game_count = 40        # number of games that are played between the old and the new network
-mcts_sim_count = 15                 # the number of simulations for the monte-carlo tree search
+network_duel_game_count = 100        # number of games that are played between the old and the new network
+mcts_sim_count = 80                 # the number of simulations for the monte-carlo tree search
 c_puct = 1                          # the higher this constant the more the mcts explores
 temp = 1                            # the temperature, controls the policy value distribution
 temp_threshold = 5                  # up to this move the temp will be temp, otherwise 0 (deterministic play)
@@ -49,7 +49,7 @@ for i in range(len(path_list)):
 
     print("play {} against minimax".format(net_path))
     net_score = alpha_zero_learning.net_vs_minimax(net, network_duel_game_count, mcts_sim_count, c_puct, 0)
-    avg_score_nm.append(net_score/network_duel_game_count)
+    avg_score_nm.append(net_score)
 
 
 
@@ -61,7 +61,7 @@ path_list = os.listdir(network_dir)
 path_list.sort(key=utils.natural_keys)
 
 # get the best network
-best_network_path = network_dir + path_list[25]
+best_network_path = network_dir + path_list[-1]
 best_net = torch.load(best_network_path).to(Globals.device)
 for i in range(len(path_list)):
     generation_nn.append(i)
@@ -70,8 +70,8 @@ for i in range(len(path_list)):
 
     print("play {} against the best network {}".format(net_path, best_network_path))
     # random_net = alpha_zero_learning.Network(learning_rate)
-    best_net_score, net_score = alpha_zero_learning.net_vs_net(best_net, net, network_duel_game_count, mcts_sim_count, c_puct, 0)
-    avg_score_nn.append(net_score/network_duel_game_count)
+    net_score = alpha_zero_learning.net_vs_net(net, best_net, network_duel_game_count, mcts_sim_count, c_puct, 0)
+    avg_score_nn.append(net_score)
 
 
 

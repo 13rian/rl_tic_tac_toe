@@ -1,41 +1,47 @@
 from utils import utils
 
-from game import tic_tac_toe
+from game import tournament
 from game.globals import CONST
 
-import numpy as np
-import torch
 import logging
-from rl.alpha_zero import mcts, alpha_zero_learning
-from game.tic_tac_toe import BitBoard
-from game import minimax
-import time
+
 
 # initialize the logger
 # The logger
 utils.init_logger(logging.DEBUG, file_name="log/app.log")
-logger = logging.getLogger('OthelloTrain')
+logger = logging.getLogger('Tests')
 
 
-score = tic_tac_toe.play_minimax_vs_random(1, CONST.WHITE)
+# play random vs random
+game_count = 1000
+player1 = tournament.RandomPlayer()
+player2 = tournament.RandomPlayer()
+white_score = tournament.play_one_color(game_count, player1, CONST.WHITE, player2)
+logger.info("white score for random vs random: {}".format(white_score))
 
-start_time = time.time()
-score_as_white = tic_tac_toe.play_minimax_vs_random(100, CONST.WHITE)
-score_as_black = tic_tac_toe.play_minimax_vs_random(100, CONST.BLACK)
-end_time = time.time()
-elapsed_time = end_time - start_time
+black_score = tournament.play_one_color(game_count, player1, CONST.BLACK, player2)
+logger.info("black score for random vs random: {}".format(black_score))
 
-print("score as white: ", score_as_white)
-print("score as black: ", score_as_black)
-print("elapsed_time: ", elapsed_time)
 
-start_time = time.time()
-white_score = tic_tac_toe.play_minimax_vs_minimax(100)
-end_time = time.time()
-elapsed_time = end_time - start_time
+# play minimax vs minimax to check if the score is 0.5
+game_count = 100
+player1 = tournament.MinimaxPlayer()
+player2 = tournament.MinimaxPlayer()
+player1_score = tournament.play_match(game_count, player1, player2)
+logger.info("minimax vs minimax score: {}".format(player1_score))
 
-print("minimax vs minimax: ", white_score)
-print("elapsed_time: ", elapsed_time)
+
+# play random vs minimax
+game_count = 1000
+player1 = tournament.MinimaxPlayer()
+player2 = tournament.RandomPlayer()
+white_score = tournament.play_one_color(game_count, player1, CONST.WHITE, player2)
+logger.info("white score for minimax vs random: {}".format(white_score))
+
+black_score = tournament.play_one_color(game_count, player1, CONST.BLACK, player2)
+logger.info("black score for minimax vs random: {}".format(black_score))
+
+
 
 
 

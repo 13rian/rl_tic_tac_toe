@@ -9,6 +9,7 @@ import torch.optim as optim
 
 from game import tic_tac_toe
 from game.globals import Globals, CONST
+from game import tournament
    
 
 class Network(nn.Module):
@@ -181,8 +182,11 @@ class Agent:
         :return:            the mean score against the random player 0: lose, 0.5 draw, 1: win
         """
 
-        score = tic_tac_toe.v_net_against_random(self.training_network, color, game_count)
+        v_player = tournament.VNetPlayer(self.network)
+        random_player = tournament.RandomPlayer()
+        score = tournament.play_one_color(game_count, v_player, color, random_player)
         return score
+
 
 
 class ExperienceBuffer:

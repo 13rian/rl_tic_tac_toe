@@ -1,9 +1,13 @@
 import time
+import logging
 
 from game.globals import CONST
 from game import tic_tac_toe
 
+logger = logging.getLogger('Minimax')
+
 state_dict = {}     # holds all states of the game, key: state_number, value: white score
+
 
 def minimax(board, player, fill_state_dict = False):
     """
@@ -16,13 +20,11 @@ def minimax(board, player, fill_state_dict = False):
                          0: draw
                         -1: loss
     """
-
     if board.terminal:
         reward = board.reward()
         if player == CONST.BLACK:
             reward = -reward
         return reward
-
 
     move = -1
     score = -2
@@ -55,9 +57,9 @@ def fill_state_dict():
     :return:
     """
     if len(state_dict) > 0:
-        # print("state dict is already filled")
         return
 
+    logger.debug("start to fill the minimax state dict")
     start_time = time.time()
     board = tic_tac_toe.BitBoard()
 
@@ -66,8 +68,8 @@ def fill_state_dict():
 
     # go through the whole game
     score = minimax(board, board.player, True)
-    state_dict[state] = 0
+    state_dict[state] = score
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print("elapsed time to will the state dict: ", elapsed_time)
-    print("size of the state dict: ", len(state_dict))
+    logger.debug("elapsed time to fill the state dict: {}".format(elapsed_time))
+    logger.debug("size of the state dict: {}".format(len(state_dict)))
