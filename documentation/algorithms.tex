@@ -175,6 +175,107 @@ $ \\
 % 									AlphaZero											  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{AlphaZero}
+\subsection{Monte-Carlo Tree Search (MCTS)}
+\subsubsection{Upper Confidence Bound}
+$ U(s,a) = Q(s,a) + \sqrt{\frac{2\ln{\sum\nolimits_{b}N(s,b)}}{1 + N(s,a)}}$ \\
+
+\noindent
+$U(s,a)$ is the upper confidence bound for the current state $s$ and action $a$ \\
+$Q(s,a)$ is the expected reward by taking action $a$ in state $s$ \\
+$N(s,a)$ is the number of times we took action $a$ from state $s$ \\
+$\sum\nolimits_{b}N(s,b)$ is the total number of plays from state $s$ \\
+\\
+
+
+\subsubsection{Upper Confidence Bound Alpha Zero}
+\noindent 
+$ U(s,a) = Q(s,a) + c_{puct} P(s,a) \frac{\sqrt{\sum\nolimits_{b}N(s,b)}}{1 + N(s,a)}$ \\
+
+\noindent 
+$U(s,a)$ is the upper confidence bound for the current state $s$ and action $a$. \\
+$Q(s,a)$ is the expected reward by taking action $a$ in state $s$. \\
+$c_{puct}$ is a constant that controls the amount exploration \\ 
+$P(s,a)$ probability to take action $a$ in state $s$ as predicted by the neural network \\
+$N(s,a)$ is the number of times we took action $a$ from state $s$ \\
+$\sum\nolimits_{b}N(s,b)$ is the total number of plays from state $s$ \\
+\\
+\pagebreak
+
+
+\subsubsection{Alpha Zero Tree Search}
+\textbf{procedure} SEARCH($s$) \\
+\indent \textbf{If} terminal($s_t$) \textbf{Then} \\
+\indent \indent \textbf{Return} $r_t$ \\
+\indent \textbf{End If} \\
+\\
+\indent \textbf{If not} exists($P(s, .)$) \textbf{Then} \\
+\indent \indent predict $P(s, .)$ and $v(s)$ with the neural network \\
+\indent \indent $N_s(s) = 0$ \\
+\indent \indent $Q(s, a) = 0$ for all $a$ \\
+\indent \indent $N(s, a) = 0$ for all $a$ \\
+\indent \indent \textbf{Return} $v(s)$ \\
+\indent \textbf{End If} \\
+\\
+\indent $U(s,a) = Q(s,a) + c_{puct} P(s,a) \frac{\sqrt{N_s(s)}}{1 + N(s,a)}$ for all $a$ \\
+\indent $a_t = \text{argmax}_a U(s,a)$ \\
+\indent Execute $a_t$ to get next state $s_{t+1}$ \\
+\indent $v(s_{t+1}) = \text{SEARCH}(s_{t+1})$ \\
+\\
+\indent \textbf{If} player == BLACK \textbf{Then} \\
+\indent \indent $v = -v(s_{t+1})$ \\
+\indent \textbf{Else} \\
+\indent \indent $v = v(s_{t+1})$ \\
+\indent \textbf{End If} \\
+\\
+\indent $Q(s,a) = \frac{N(s,a) Q(s,a) + v}{N(s,a) + 1}$ \\
+\indent $N(s,a) = N(s,a) + 1$ \\
+\indent $N_s(s) = N_s(s) + 1$ \\
+\indent \textbf{Return} v \\
+\textbf{End procedure} \\
+\\
+\textbf{procedure} MCTSAZ($s$) \\
+\indent \textbf{For} simulation = 1, M \textbf{Do} \\
+\indent \indent SEARCH($s_t$) \\
+\indent \textbf{End} \\
+\indent \textbf{Return} $N(s,a)$\\
+\textbf{End procedure} \\
+
+
+\pagebreak
+\subsubsection{Training Algorithm}
+\textbf{For} episode = 1, M \textbf{Do} \\
+\indent \textbf{For} t = 1, T \textbf{Do} \\
+\indent \indent Initialize $N_s$, $N$, $Q$, $U$ and $P$ \\
+\indent \indent Initialize a fresh game \\
+\indent \indent $N(s_t,a) = \text{MCTSAZ}(s)$ \\
+\indent \indent \textbf{If} $temp == 0$ \textbf{Then} \\
+\indent \indent \indent $a_t = \text{argmax}_a N(s_,a)$ \\
+\indent \indent \indent $P(s_t,a) = 
+\begin{cases}
+	1		& \text{for } a_t \\
+	0    	& \text{otherwise} \\
+\end{cases}
+$ \\
+\indent \indent \textbf{Else} \\
+\indent \indent \indent $P(s_t,a) = N(s,a)^{\frac{1}{temp}}$ \\
+\indent \indent \indent $P(s_t,a) = \frac{P(s,a)}{\sum\nolimits_{b}P(s_t,b)}$ \\
+\indent \indent \textbf{End If} \\
+\\
+\indent \indent Append the training example $(s_t, P(s_t,a), v_t)$ to $L$, where $v_t$ is arbitrary \\
+\indent \indent Pick action $a_t$ by sampling from $P(s_t,a)$ \\
+\indent \indent Play move $a_t$ \\
+\indent \textbf{End} \\
+\\
+\indent Observe the final reward $r_T$ of the game \\
+\indent \textbf{For} training example $(s_t, P(s_t,a), v_t) \in L$ \textbf{Do} \\
+\indent \indent \textbf{If} player == WHITE \textbf{Then} \\
+\indent \indent \indent Update $v_t \leftarrow r_T$ \\
+\indent \indent \textbf{Else} \\
+\indent \indent \indent Update $v_t \leftarrow -r_T$ \\
+\indent \indent \textbf{End If} \\
+\indent \textbf{End} \\
+\textbf{End} \\
+
 
 
 \pagebreak

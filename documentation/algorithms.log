@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7050 64-bit) (preloaded format=pdflatex 2019.6.2)  15 JUL 2019 14:03
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7050 64-bit) (preloaded format=pdflatex 2019.6.2)  1 AUG 2019 15:55
 entering extended mode
 **./algorithms.tex
 (algorithms.tex
@@ -209,35 +209,108 @@ Underfull \hbox (badness 10000) in paragraph at lines 132--166
 
  []
 
-[4] [5] (algorithms.aux) ) 
+[4]
+Underfull \hbox (badness 10000) in paragraph at lines 180--181
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 182--188
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 182--188
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 191--193
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 194--203
+
+ []
+
+[5]
+Underfull \hbox (badness 10000) in paragraph at lines 206--242
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 206--242
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 206--242
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 206--242
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 206--242
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 206--242
+
+ []
+
+[6]
+Underfull \hbox (badness 10000) in paragraph at lines 246--278
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 246--278
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 246--278
+
+ []
+
+[7] (algorithms.aux) ) 
 Here is how much of TeX's memory you used:
- 1378 strings out of 492895
- 18424 string characters out of 3121399
+ 1379 strings out of 492895
+ 18439 string characters out of 3121399
  89853 words of memory out of 3000000
- 5329 multiletter control sequences out of 15000+200000
- 9555 words of font info for 35 fonts, out of 3000000 for 9000
+ 5330 multiletter control sequences out of 15000+200000
+ 9862 words of font info for 36 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  27i,10n,32p,243b,195s stack positions out of 5000i,500n,10000p,200000b,50000s
-<C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.
-9/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/Roy Morphy/AppData/Local/
-Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Roy Mor
-phy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmex10.pfb
-><C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsf
-onts/cm/cmmi10.pfb><C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts
-/type1/public/amsfonts/cm/cmmi12.pfb><C:/Users/Roy Morphy/AppData/Local/Program
-s/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/Roy Morphy/AppD
-ata/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/User
-s/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/c
-mr12.pfb><C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/pub
-lic/amsfonts/cm/cmr17.pfb><C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.
-9/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Users/Roy Morphy/AppData/Local/Pr
-ograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/Roy Morph
-y/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy5.pfb><C
+<C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fo
+nts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/Roy Morphy/AppData/Local/Prog
+rams/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Roy Morphy/
+AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:
+/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts
+/cmextra/cmex7.pfb><C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts
+/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/Roy Morphy/AppData/Local/Program
+s/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi12.pfb><C:/Users/Roy Morphy/App
+Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi5.pfb><C:/Use
+rs/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/
+cmmi7.pfb><C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/pu
+blic/amsfonts/cm/cmr10.pfb><C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2
+.9/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/Roy Morphy/AppData/Local/
+Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb><C:/Users/Roy Morp
+hy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr5.pfb><C
 :/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfont
-s/cm/cmsy7.pfb>
-Output written on algorithms.pdf (5 pages, 141111 bytes).
+s/cm/cmr7.pfb><C:/Users/Roy Morphy/AppData/Local/Programs/MiKTeX 2.9/fonts/type
+1/public/amsfonts/cm/cmsy10.pfb><C:/Users/Roy Morphy/AppData/Local/Programs/MiK
+TeX 2.9/fonts/type1/public/amsfonts/cm/cmsy5.pfb><C:/Users/Roy Morphy/AppData/L
+ocal/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy7.pfb>
+Output written on algorithms.pdf (7 pages, 183610 bytes).
 PDF statistics:
- 70 PDF objects out of 1000 (max. 8388607)
+ 90 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

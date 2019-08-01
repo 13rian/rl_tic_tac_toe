@@ -1,0 +1,32 @@
+residual block definition as used in alpha zero:
+
+class ResBlock(nn.Module):
+    def __init__(self, inplanes=128, planes=128, stride=1, downsample=None):
+        super(ResBlock, self).__init__()
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+    def forward(self, x):
+        residual = x
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += residual
+        out = F.relu(out)
+        return out
+		
+include board symmetry
+
+add dirichlet noise to the root node during self-play
+
+decrease learning rate after some games were played, can be bigger at the beginning
+
+network pitting removed in the newest alpha zero version
+
+increase the batch size in the other algorithms to train them faster
+
+		
+		

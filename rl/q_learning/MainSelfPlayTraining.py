@@ -13,7 +13,7 @@ from rl.q_learning import q_learning
 
 # The logger
 utils.init_logger(logging.DEBUG, file_name="log/tic_tac_toe.log")
-logger = logging.getLogger('TicTacToeTrain')
+logger = logging.getLogger('Q-Learning')
 
 
 # set the random seed

@@ -85,3 +85,47 @@ The idea of using eligibility traces in deep Q-networks can be found in this [pa
 
 
 ### AlphaZero
+Alpha Zero is the current state of the art reinforcement learning algorithm for board games developed by Google DeepMind. The ideas presented below are taken from this [paper](https://arxiv.org/abs/1712.01815) and from [this](https://web.stanford.edu/~surag/posts/alphazero.html) implementation. To train an agent absolutely no human knowledge is needed apart form the rules of the game. To master complex games like chess or Go a huge amount of computational power is needed and currently not doable on a single computer. Tic Tac Toe is so simple that it can be trained within reasonable time using the Alpha Zero algorithm. Below is a high level overview of how the algorithm works before going into the details:  
+- Get some training examples by letting the training network play against itself (self-play) by using a modified Monte-Carlo Tree Search (MCTS)
+- Use the generated training examples from the self-play to train the network  
+- Optional: Let the training network play against the current best network. If it reaches at least a certain score, the training network will become the best network. If not, the steps above are repeated. This step was removed in the latest version of the AlphaZero paper. Therefore it is marked as optional.
+
+#### *The neural network*
+DeepMind used a deep convolutional residual neural network. Here only a simple neural network with fully connected layers is used. The input of the network is the current game state from the white perspective. In this project the Tic Tac Toe board is represented with a vector of size 18. If it is white's move the first 9 elements represent the white pieces and the second 9 elements represent the black pieces. If the current player is black the white and the black pieces are swapped (first 9 elements represent the black pieces and the second 9 elements represent the white pieces). This way the neural network gets the state of the games always presented from the white perspective.  
+After a few layers the architecture of the network will split into two heads, a policy and a value head. The policy output of the network consists of a vector describing the probability over all possible actions. For Tic Tac Toe this is a vector of 9 as the board is always viewed from the white perspective. Illegal moves are ignored later on and the probabilities are normalized again. The value output of the network is a continuous value between -1 and 1 representing the outcome of the game for the current player where -1 means loss, 0 means draw and 1 means win.
+ 
+
+#### *Monte-Carlo Tree Search*
+Monte-Carlo Tree Search is a heuristic search algorithm. The idea is to treat the game like a tree. The current state of the game is the root node. By taking legal moves nodes of the tree can be reached that each represent a legal game state. Theoretically the whole tree of the game could be expanded to find the optimal move for the current state (Minimax algorithm). This is possible for very small games such as Tic Tac Toe but for larger games this is simply not doable. In pure Monte-Carlo search you would just play a number of rollouts (make simulations until you reach the end of the game). The moves are picked randomly. After the rollout were performed you choose the move with the highest win probability. After you reached the new position you repeat the process. If you make an infinite number of simulations this strategy will lead to best play. In games with an exponential growing tree such as chess it will not lead to good results as far too many simulations are needed.  
+
+On improvement is to use an upper confidence bound during the tree search given by,  
+  
+<img src="documentation/mcts_ucb.png" alt="drawing" width="600"/>
+
+During the tree search you always pick the action with the highest upper confidence bound. This ensures a balance between exploration and exploitation. The upper confidence bound is high for nodes that have not been visited often or nodes that have a high expected reward. At the end of the simulation the action with the highest probability to win is picked (i .e. the action with the largest Q(s,a)) and a new simulation is started. A more detailed explanation and some code examples can be found [here](https://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/).  
+  
+AlphaZero improved the MCTS further by using the following upper confidence bound:
+
+<img src="documentation/az_ucb.png" alt="drawing" width="600"/>
+
+The MCTS that is used by Alpha Zero uses the network to predict the probabilities of an action to play. The algorithm to search one state is given by,
+
+<img src="documentation/az_mcts.png" alt="drawing" width="400"/>
+
+For every game state s we execute the procedure MCTSAZ(s) which returns N(s,a). This is the number of times an action $a$ was chosen in state s. See below how this procedure is used during training.
+
+
+#### *Training Algorithm*
+We now have all the pieces to understand the actual Alpha Zero training algorithm:  
+- Randomly initialize the weights of the neural network  
+- Keep a copy of the network. Lets call it reference network. The reference network is the current best network of the training process.  
+- *Self-Play*: In order to train the neural network we need training examples that are generated by self-play:
+
+<img src="documentation/az_training.png" alt="drawing" width="570"/>   
+
+Executing the algorithm above we will get one training example after every move. The temperature can be kept > 0 for the whole game or it can be set to 0 after a few moves were played.   
+- *Training*: After a few self-play games were played the training examples are used to train the training network. One example consists of (s, P, v), the state of the game s, the policy P and the value v. 
+- *Evaluation*: Let the training network play against the reference network. The games will be played exactly like the self-play games with the difference that the temperature will always be set to 0. This means that the network will play deterministically. If the training network reaches a certain score (e. g. 0.55) a copy of the training network is kept, which will be the new reference network for the next evaluation. If the training network can not beat the reference network it will be trained further.
+
+The three steps described above are just repeated and eventually a very strong agent will be created. 
+ 

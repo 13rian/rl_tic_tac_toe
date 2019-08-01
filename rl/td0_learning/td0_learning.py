@@ -188,6 +188,21 @@ class Agent:
         return score
 
 
+    def play_against_minimax(self, color, game_count):
+        """
+        lets the agent play against an optimal minimax player. since the minimax player
+        has an optimal strategy the best score the agent can get is 0.5
+        :param color:       the color of the agent
+        :param game_count:  the number of games that are played
+        :return:            the mean score against the minimax player 0: lose, 0.5 draw, 1: win
+        """
+
+        v_player = tournament.VNetPlayer(self.target_network)
+        minimax_player = tournament.MinimaxPlayer()
+        score = tournament.play_one_color(game_count, v_player, color, minimax_player)
+        return score
+
+
 
 class ExperienceBuffer:
     def __init__(self, max_size):

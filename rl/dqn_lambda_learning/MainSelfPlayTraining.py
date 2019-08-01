@@ -13,7 +13,7 @@ from rl.dqn_lambda_learning import dqn_lambda_learning
 
 # The logger
 utils.init_logger(logging.DEBUG, file_name="log/tic_tac_toe.log")
-logger = logging.getLogger('TicTacToeTrain')
+logger = logging.getLogger('DQN Lambda')
 
 
 # set the random seed
@@ -21,7 +21,7 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 1000        # the number of epochs to train the neural network 1000 ~ 100'000 episodes ~ 25min
+epoch_count = 2000        # the number of epochs to train the neural network 1000 ~ 100'000 episodes ~ 25min
 episode_count = 100       # the number of games that are self-played in one epoch
 test_interval = 10        # epoch intervals at which the network plays against a random player
 test_game_count = 1000    # the number of games that are played in the test against the random opponent

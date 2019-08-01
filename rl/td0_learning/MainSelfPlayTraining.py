@@ -13,7 +13,7 @@ import td0_learning
 
 # The logger
 utils.init_logger(logging.DEBUG, file_name="log/tic_tac_toe.log")
-logger = logging.getLogger('TD0_Training')
+logger = logging.getLogger('TD0_Learning')
 livePlots = True
 
 

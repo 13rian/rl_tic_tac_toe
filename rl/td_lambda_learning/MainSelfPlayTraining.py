@@ -13,7 +13,7 @@ from rl.td_lambda_learning import td_lambda_learning
 
 # The logger
 utils.init_logger(logging.DEBUG, file_name="log/tic_tac_toe.log")
-logger = logging.getLogger('TicTacToeTrain')
+logger = logging.getLogger('TD_Lambda')
 
 
 # set the random seed

@@ -218,9 +218,24 @@ class Agent:
         :return:            the mean score against the random player 0: lose, 0.5 draw, 1: win
         """
 
-        q_player = tournament.QNetPlayer(self.network)
+        q_player = tournament.QNetPlayer(self.target_network)
         random_player = tournament.RandomPlayer()
         score = tournament.play_one_color(game_count, q_player, color, random_player)
+        return score
+
+
+    def play_against_minimax(self, color, game_count):
+        """
+        lets the agent play against an optimal minimax player. since the minimax player
+        has an optimal strategy the best score the agent can get is 0.5
+        :param color:       the color of the agent
+        :param game_count:  the number of games that are played
+        :return:            the mean score against the minimax player 0: lose, 0.5 draw, 1: win
+        """
+
+        q_player = tournament.QNetPlayer(self.network)
+        minimax_player = tournament.MinimaxPlayer()
+        score = tournament.play_one_color(game_count, q_player, color, minimax_player)
         return score
 
         

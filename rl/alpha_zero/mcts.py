@@ -110,8 +110,8 @@ class MCTS:
         max_ucb = -float("inf")
         action = -1
         for a in board.legal_moves:
-            if (s,a) in self.Q:
-                u = self.Q[(s,a)] + self.c_puct*self.P[s][a]*math.sqrt(self.N_s[s]) / (1+self.N_sa[(s,a)])
+            if (s, a) in self.Q:
+                u = self.Q[(s, a)] + self.c_puct*self.P[s][a]*math.sqrt(self.N_s[s]) / (1+self.N_sa[(s,a)])
             else:
                 u = self.c_puct*self.P[s][a]*math.sqrt(self.N_s[s] + 1e-8)  # avoid division by 0
             
@@ -130,12 +130,12 @@ class MCTS:
         if player == CONST.BLACK:
             v_true *= -1     # flip the value for the black player since the game is always viewed from the white perspective
         
-        if (s,a) in self.Q:
-            self.Q[(s,a)] = (self.N_sa[(s,a)]*self.Q[(s,a)] + v_true) / (self.N_sa[(s,a)] + 1)
-            self.N_sa[(s,a)] += 1
+        if (s, a) in self.Q:
+            self.Q[(s, a)] = (self.N_sa[(s, a)]*self.Q[(s, a)] + v_true) / (self.N_sa[(s, a)] + 1)
+            self.N_sa[(s, a)] += 1
         else:   
-            self.Q[(s,a)] = v_true
-            self.N_sa[(s,a)] = 1
+            self.Q[(s, a)] = v_true
+            self.N_sa[(s, a)] = 1
         
         self.N_s[s] += 1
         return v
