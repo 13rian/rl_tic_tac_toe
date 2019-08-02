@@ -21,7 +21,7 @@ class MCTS:
         
         
     
-    def policy_values(self, board, net, mc_sim_count, temp):
+    def policy_values(self, board, net, mc_sim_count, temp, alpha_dirich=0):
         """
         executes mc_sim_count number of monte-carlo simulations to obtain the probability
         vector of the current game position
@@ -30,7 +30,8 @@ class MCTS:
         :param mc_sim_count:     number of monte-carlo simulations to perform
         :param temp:             the temperature, determines the degree of exploration
                                  temp = 0 means that we only pick the best move
-                                 temp = 1 means that we pick the move proportional to the count the state was visited  
+                                 temp = 1 means that we pick the move proportional to the count the state was visited
+        :param alpha_dirich:     alpha parameter for the dirichlet noise that is added to the root node probabilities
         :return:                 policy where the probability of an action is proportional to 
                                  N_sa**(1/temp)
         """
@@ -38,7 +39,7 @@ class MCTS:
         # perform the tree search
         for _ in range(mc_sim_count):
             sim_board = board.clone()
-            self.tree_search(sim_board, net)
+            self.tree_search(sim_board, net, alpha_dirich)
 
         s = board.state_number()
         counts = [self.N_sa[(s, a)] if (s, a) in self.N_sa else 0 for a in range(CONST.NN_POLICY_SIZE)]
@@ -57,7 +58,7 @@ class MCTS:
     
         
         
-    def tree_search(self, board, net):
+    def tree_search(self, board, net, alpha_dirich=0):
         """
         Performs one iteration of the monte-carlo tree search.
         The method is recursively called until a leaf node is found. This is a game
@@ -70,8 +71,9 @@ class MCTS:
         The method returns the estimated value of the current game state. The sign of the value
         is flipped because the value of the game for the other player is the negative value of
         the state of the current player          
-        :param net:       neural network that approximates the policy and the value
-        :param board:     represents the game
+        :param net:             neural network that approximates the policy and the value
+        :param board:           represents the game
+        :param alpha_dirich     alpha parameter for the dirichlet noise that is added to the root node probabilities
         :return: 
         """
     
@@ -97,7 +99,7 @@ class MCTS:
             total_prob = np.sum(self.P[s])
             if total_prob > 0:
                 self.P[s] /= total_prob    # normalize the probabilities
-            
+
             else:
                 # the network did not choose any legal move, make all moves equally probable
                 print("warning: total probabilities estimated by the network for all legal moves is smaller than 0") 
@@ -105,16 +107,27 @@ class MCTS:
             
             self.N_s[s] = 0
             return v
-      
+
+        # add dirichlet noise for the root node
+        p_s = self.P[s]
+        if alpha_dirich > 0:
+            p_s = np.copy(p_s)
+            alpha_params = alpha_dirich * np.ones(len(board.legal_moves))
+            dirichlet_noise = np.random.dirichlet(alpha_params)
+            p_s[board.legal_moves] = 0.75 * p_s[board.legal_moves] + 0.25 * dirichlet_noise
+
+            # normalize the probabilities again
+            total_prob = np.sum(p_s)
+            p_s /= total_prob
+
         # choose the action with the highest upper confidence bound
         max_ucb = -float("inf")
         action = -1
         for a in board.legal_moves:
             if (s, a) in self.Q:
-                u = self.Q[(s, a)] + self.c_puct*self.P[s][a]*math.sqrt(self.N_s[s]) / (1+self.N_sa[(s,a)])
+                u = self.Q[(s, a)] + self.c_puct*p_s[a]*math.sqrt(self.N_s[s]) / (1+self.N_sa[(s, a)])
             else:
-                u = self.c_puct*self.P[s][a]*math.sqrt(self.N_s[s] + 1e-8)  # avoid division by 0
-            
+                u = self.c_puct*p_s[a]*math.sqrt(self.N_s[s] + 1e-8)  # avoid division by 0
 
             if u > max_ucb:
                 max_ucb = u

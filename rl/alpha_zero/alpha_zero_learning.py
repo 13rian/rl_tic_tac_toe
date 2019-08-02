@@ -148,10 +148,11 @@ class Agent:
         self.value_list = []
     
 
-    def play_self_play_game(self, temp_threshold):
+    def play_self_play_game(self, temp_threshold, alpha_dirich=0):
         """
         :param temp_threshold:  up to this move the temp will be temp, after the threshold it will be set to 0
-        plays a game against itself with some exploratory moves in it
+                                plays a game against itself with some exploratory moves in it
+        :param alpha_dirich     alpha parameter for the dirichlet noise that is added to the root node
         :return:
         """
 
@@ -163,7 +164,7 @@ class Agent:
         while not self.board.terminal:
             state, player = self.board.white_perspective()
             temp = 0 if move_count >= temp_threshold else self.temp
-            policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, temp)
+            policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, temp, alpha_dirich)
             
             # sample from the policy to determine the move to play
             # self.board.print()
@@ -374,7 +375,7 @@ def net_vs_net(net1, net2, game_count, mcts_sim_count, c_puct, temp):
 
 
 
-def net_vs_minimax(net, game_count, mcts_sim_count, c_puct, temp):
+def net_vs_minimax(net, game_count, mcts_sim_count, c_puct, temp, color=None):
     """
     lets the alpha zero network play against a minimax player
     :param net:             alpha zero network
@@ -382,10 +383,16 @@ def net_vs_minimax(net, game_count, mcts_sim_count, c_puct, temp):
     :param mcts_sim_count   number of monte carlo simulations
     :param c_puct           constant that controls the exploration
     :param temp             the temperature
+    :param color            the color of the network
     :return:                score of network
     """
 
     az_player = tournament.AlphaZeroPlayer(net, c_puct, mcts_sim_count, temp)
     minimax_player = tournament.MinimaxPlayer()
-    az_score = tournament.play_match(game_count, az_player, minimax_player)
+
+    if color is None:
+        az_score = tournament.play_match(game_count, az_player, minimax_player)
+    else:
+        az_score = tournament.play_one_color(game_count, az_player, color, minimax_player)
+
     return az_score

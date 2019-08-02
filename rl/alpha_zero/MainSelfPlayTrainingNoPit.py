@@ -3,12 +3,11 @@ import torch
 import random
 import time
 import logging
-import os
-import shutil
 
 from utils import utils
 
 from game.globals import Globals
+from game.globals import CONST
 from rl.alpha_zero import alpha_zero_learning
 
 
@@ -22,13 +21,14 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 100                   # the number of epochs to train the neural network
+epoch_count = 200                   # the number of epochs to train the neural network
 episode_count = 100                 # the number of games that are self-played in one epoch
 update_count = 10                   # the number the neural net is updated  in one epoch with the experience data
-network_duel_game_count = 100        # number of games that are played between the old and the new network
+network_duel_game_count = 300       # number of games that are played between the old and the new network
 mcts_sim_count = 15                 # the number of simulations for the monte-carlo tree search
 c_puct = 1                          # the higher this constant the more the mcts explores
 temp = 1                            # the temperature, controls the policy value distribution
+alpha_dirich = 0.15                 # alpha parameter for the dirichlet noise (0.03 - 0.3 az paper)
 temp_threshold = 5                  # up to this move the temp will be temp, otherwise 0 (deterministic play)
 new_net_win_rate = 0.55             # win rate of the new network in order to replace the old one
 learning_rate = 0.005                 # the learning rate of the neural network
@@ -47,16 +47,29 @@ agent = alpha_zero_learning.Agent(learning_rate, mcts_sim_count, c_puct, temp, b
 # to plot the fitness
 policy_loss = []
 value_loss = []
-avg_score_vs_minimax = []
+minimax_score_white = []
+minimax_score_black = []
 
 
 start_training = time.time()
 for i in range(epoch_count):
+    ###### play against a minimax player to see how good the network is
+    logger.info("start match against minimax in epoch {}".format(i))
+    white_score = alpha_zero_learning.net_vs_minimax(agent.new_network, network_duel_game_count, mcts_sim_count, c_puct, 0, CONST.WHITE)
+    logger.info("white score vs minimax: {}".format(white_score))
+
+    black_score = alpha_zero_learning.net_vs_minimax(agent.new_network, network_duel_game_count, mcts_sim_count, c_puct, 0, CONST.BLACK)
+    logger.info("black score vs minimax: {}".format(black_score))
+
+    minimax_score_white.append(white_score)
+    minimax_score_black.append(black_score)
+
+
     ###### self play and update: create some game data through self play
     # logger.info("start playing games in epoch {}".format(i))
     for _ in range(episode_count):
         # play one self-game
-        agent.play_self_play_game(temp_threshold)
+        agent.play_self_play_game(temp_threshold, alpha_dirich)
 
 
 
@@ -69,11 +82,6 @@ for i in range(epoch_count):
     print("value loss: ", loss_v)
     # agent.clear_exp_buffer()            # clear the experience buffer
 
-    ###### play agsint a minimax player to see how good the network is
-    logger.info("start match against minimax in epoch {}".format(i))
-    net_score = alpha_zero_learning.net_vs_minimax(agent.new_network, network_duel_game_count, mcts_sim_count, c_puct, 0)
-    avg_score_vs_minimax.append(net_score)
-    print("score against minimax: {}".format(net_score))
 
 
 end_training = time.time()
@@ -100,7 +108,9 @@ fig2.show()
 
 # plot the score against the minimax player
 fig3 = plt.figure(3)
-plt.plot(avg_score_vs_minimax)
+plt.plot(minimax_score_white, label="white")
+plt.plot(minimax_score_black, label="black")
+plt.legend(loc='best')
 axes = plt.gca()
 axes.set_ylim([0, 0.5])
 plt.title("Average Score Against Minimax")
