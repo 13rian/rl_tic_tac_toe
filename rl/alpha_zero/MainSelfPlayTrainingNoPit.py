@@ -21,15 +21,15 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 200                   # the number of epochs to train the neural network
-episode_count = 100                 # the number of games that are self-played in one epoch
-update_count = 10                   # the number the neural net is updated  in one epoch with the experience data
+epoch_count = 60                   # the number of epochs to train the neural network
+episode_count = 2000                 # the number of games that are self-played in one epoch
+update_count = 200                   # the number the neural net is updated  in one epoch with the experience data
 network_duel_game_count = 300       # number of games that are played between the old and the new network
-mcts_sim_count = 15                 # the number of simulations for the monte-carlo tree search
-c_puct = 1                          # the higher this constant the more the mcts explores
+mcts_sim_count = 25                 # the number of simulations for the monte-carlo tree search
+c_puct = 4                          # the higher this constant the more the mcts explores
 temp = 1                            # the temperature, controls the policy value distribution
-alpha_dirich = 0.15                 # alpha parameter for the dirichlet noise (0.03 - 0.3 az paper)
-temp_threshold = 5                  # up to this move the temp will be temp, otherwise 0 (deterministic play)
+alpha_dirich = 1                 # alpha parameter for the dirichlet noise (0.03 - 0.3 az paper, 10/ avg n_moves)
+temp_threshold = 9                  # up to this move the temp will be temp, otherwise 0 (deterministic play)
 new_net_win_rate = 0.55             # win rate of the new network in order to replace the old one
 learning_rate = 0.005                 # the learning rate of the neural network
 batch_size = 128                    # the batch size of the experience buffer for the neural network training
@@ -66,7 +66,7 @@ for i in range(epoch_count):
 
 
     ###### self play and update: create some game data through self play
-    # logger.info("start playing games in epoch {}".format(i))
+    logger.info("start playing games in epoch {}".format(i))
     for _ in range(episode_count):
         # play one self-game
         agent.play_self_play_game(temp_threshold, alpha_dirich)
@@ -74,7 +74,7 @@ for i in range(epoch_count):
 
 
     ###### training, train the training network and use the target network for predictions
-    # logger.info("start updates in epoch {}".format(i))
+    logger.info("start updates in epoch {}".format(i))
     loss_p, loss_v = agent.nn_update(update_count)
     policy_loss.append(loss_p)
     value_loss.append(loss_v)
