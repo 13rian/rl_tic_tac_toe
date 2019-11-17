@@ -14,19 +14,10 @@ random.seed(a=None, version=2)
 
 
 # define the parameters
-epoch_count = 170                   # the number of epochs to train the neural network
-episode_count = 100                 # the number of games that are self-played in one epoch
-update_count = 10                   # the number the neural net is updated  in one epoch with the experience data
-network_duel_game_count = 100        # number of games that are played between the old and the new network
-mcts_sim_count = 80                 # the number of simulations for the monte-carlo tree search
-c_puct = 1                          # the higher this constant the more the mcts explores
-temp = 1                            # the temperature, controls the policy value distribution
-temp_threshold = 5                  # up to this move the temp will be temp, otherwise 0 (deterministic play)
-new_net_win_rate = 0.55             # win rate of the new network in order to replace the old one
-learning_rate = 0.005                 # the learning rate of the neural network
-batch_size = 128                    # the batch size of the experience buffer for the neural network training
-exp_buffer_size = 2*9*episode_count   # the size of the experience replay buffer
-network_dir = "networks/"           # directory in which the networks are saved
+network_duel_game_count = 40        # number of games that are played between the old and the new network
+mcts_sim_count = 25                 # the number of simulations for the monte-carlo tree search
+c_puct = 4                          # the higher this constant the more the mcts explores
+network_dir = "networks"            # directory in which the networks are saved
 
 # define the devices for the training and the target networks     cpu or cuda, here cpu is way faster for small nets
 Globals.device = torch.device('cpu')
@@ -40,11 +31,11 @@ path_list = os.listdir(network_dir)
 path_list.sort(key=utils.natural_keys)
 
 # get the best network
-best_network_path = network_dir + path_list[-1]
+best_network_path = "{}/{}".format(network_dir, path_list[-1])
 best_net = torch.load(best_network_path).to(Globals.device)
 for i in range(len(path_list)):
     generation_nm.append(i)
-    net_path = network_dir + path_list[i]
+    net_path = "{}/{}".format(network_dir, path_list[i])
     net = torch.load(net_path).to(Globals.device)
 
     print("play {} against minimax".format(net_path))
@@ -61,11 +52,11 @@ path_list = os.listdir(network_dir)
 path_list.sort(key=utils.natural_keys)
 
 # get the best network
-best_network_path = network_dir + path_list[-1]
+best_network_path = "{}/{}".format(network_dir, path_list[-1])
 best_net = torch.load(best_network_path).to(Globals.device)
 for i in range(len(path_list)):
     generation_nn.append(i)
-    net_path = network_dir + path_list[i]
+    net_path = "{}/{}".format(network_dir, path_list[i])
     net = torch.load(net_path).to(Globals.device)
 
     print("play {} against the best network {}".format(net_path, best_network_path))

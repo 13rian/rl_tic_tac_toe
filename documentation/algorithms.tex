@@ -213,7 +213,11 @@ $\sum\nolimits_{b}N(s,b)$ is the total number of plays from state $s$ \\
 \indent \indent $N_s(s) = 0$ \\
 \indent \indent $Q(s, a) = 0$ for all $a$ \\
 \indent \indent $N(s, a) = 0$ for all $a$ \\
-\indent \indent \textbf{Return} $v(s)$ \\
+\indent \indent \textbf{If} player == BLACK \textbf{Then} \\
+\indent \indent \indent \textbf{Return} $-v(s_{t+1})$ \\
+\indent \indent \textbf{Else} \\
+\indent \indent \indent \textbf{Return} $v(s_{t+1})$ \\
+\indent \indent \textbf{End If} \\
 \indent \textbf{End If} \\
 \\
 \indent $U(s,a) = Q(s,a) + c_{puct} P(s,a) \frac{\sqrt{N_s(s)}}{1 + N(s,a)}$ for all $a$ \\

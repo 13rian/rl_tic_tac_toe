@@ -38,7 +38,7 @@ def minimax(board, player, fill_state_dict = False):
         # fill the state dict
         if fill_state_dict:
             white_score = move_score if current_player == CONST.WHITE else -move_score
-            state_number = board_clone.state_number()
+            state_number = board_clone.state_id()
             state_dict[state_number] = white_score
 
         if move_score > score:
@@ -64,7 +64,7 @@ def fill_state_dict():
     board = tic_tac_toe.BitBoard()
 
     # fill in the first state
-    state = board.state_number()
+    state = board.state_id()
 
     # go through the whole game
     score = minimax(board, board.player, True)

@@ -162,13 +162,13 @@ class BitBoard:
         return board_mask
     
     
-    def state_number(self):
+    def state_id(self):
         """
-        uses the cantor pairing function to create one unique number form the two integers representing the board state
-        the resulting integer is unique for every board position
+        uses the cantor pairing function to create one unique id for the state form the two integers representing the
+        board state
         """
-        state = 0.5*(self.white_player + self.black_player) * (self.white_player + self.black_player + 1) + self.black_player 
-        return int(state)
+        state = "{}_{}".format(self.white_player, self.black_player)
+        return state
     
     
     
@@ -392,7 +392,7 @@ class BitBoard:
 
     def minimax_move(self):
         """
-        returns the optimal minimax move, if there are more than one optimal moves, a ranodm one is
+        returns the optimal minimax move, if there are more than one optimal moves, a random one is
         picked
         :return:
         """
@@ -402,7 +402,7 @@ class BitBoard:
         for idx, move in enumerate(self.legal_moves):
             board_clone = self.clone()
             board_clone.play_move(move)
-            state = board_clone.state_number()
+            state = board_clone.state_id()
             white_score = minimax.state_dict.get(state)
             score_list[idx] = white_score
 

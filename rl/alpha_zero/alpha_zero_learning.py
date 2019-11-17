@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 
 import torch
@@ -31,14 +30,14 @@ class Network(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         # self.optimizer = optim.SGD(self.parameters(), lr=learning_rate, momentum=momentum)
         
-        # randomly initialize all the weights
-        mean = 0
-        std = 0.2
-        nn.init.normal_(self.fc1.weight, mean=mean, std=std)
-        nn.init.normal_(self.fc2.weight, mean=mean, std=std)
-        nn.init.normal_(self.fc3.weight, mean=mean, std=std)
-        nn.init.normal_(self.fc4p.weight, mean=mean, std=std)
-        nn.init.normal_(self.fc4v.weight, mean=mean, std=std)
+        # # randomly initialize all the weights
+        # mean = 0
+        # std = 0.2
+        # nn.init.normal_(self.fc1.weight, mean=mean, std=std)
+        # nn.init.normal_(self.fc2.weight, mean=mean, std=std)
+        # nn.init.normal_(self.fc3.weight, mean=mean, std=std)
+        # nn.init.normal_(self.fc4p.weight, mean=mean, std=std)
+        # nn.init.normal_(self.fc4v.weight, mean=mean, std=std)
          
         
     def forward(self, x):
@@ -114,84 +113,55 @@ class Agent:
         self.c_puct = c_puct                                         # the higher this constant the more the mcts explores
         self.temp = temp                                             # the temperature, controls the policy value distribution
         self.batch_size = batch_size                                 # the size of the experience replay buffer
-        self.old_network = Network(learning_rate)                    # the network form the previous generation
-        self.new_network = copy.deepcopy(self.old_network)           # the most actual neural network
+        self.network = Network(learning_rate)                        # the network for the policy and value prediction
 
         self.board = tic_tac_toe.BitBoard()                          # tic tac toe board
         self.experience_buffer = ExperienceBuffer(exp_buffer_size)   # buffer that saves all experiences
-        
-        self.mcts = None
 
-        # to save the experience of one episode
-        self.state_list = []
-        self.player_list = []
-        self.policy_list = []
-        self.value_list = []
-        
         # send the network to the configured device
-        self.old_network.to(Globals.device)
-        self.new_network.to(Globals.device)
+        self.network.to(Globals.device)
 
 
     def clear_exp_buffer(self):
         self.experience_buffer.clear()
-
-
-    def reset_game(self):
-        self.board = tic_tac_toe.BitBoard()
-        self.mcts = MCTS(self.c_puct)           # reset the search tree
-        
-        # reset the experience lists
-        self.state_list = []
-        self.player_list = []
-        self.policy_list = []
-        self.value_list = []
     
 
-    def play_self_play_game(self, temp_threshold, alpha_dirich=0):
+    def play_self_play_games(self, game_count, temp_threshold, alpha_dirich=0):
         """
+        plays some games against itself and adds the experience into the experience buffer
+        :param game_count:      the number of tames to play
         :param temp_threshold:  up to this move the temp will be temp, after the threshold it will be set to 0
                                 plays a game against itself with some exploratory moves in it
         :param alpha_dirich     alpha parameter for the dirichlet noise that is added to the root node
         :return:
         """
 
-        # start a fresh game 
-        self.reset_game()
-        
-        # play the epsilon greedy move and save the state transition in the experience lists
-        move_count = 0      
-        while not self.board.terminal:
-            state, player = self.board.white_perspective()
-            temp = 0 if move_count >= temp_threshold else self.temp
-            policy = self.mcts.policy_values(self.board, self.new_network, self.mcts_sim_count, temp, alpha_dirich)
-            
-            # sample from the policy to determine the move to play
-            # self.board.print()
-            # print("policy: ", policy)
-            move = np.random.choice(len(policy), p=policy)
-            self.board.play_move(move)
-            
-            # save the training example
-            self.state_list.append(state)
-            self.player_list.append(player)
-            self.policy_list.append(policy)
-            move_count += 1
-        
-        # calculate the values from the perspective of the player who's move it is
-        reward = self.board.reward()
-        for player in self.player_list:
-            value = reward if player == CONST.WHITE_MOVE else -reward
-            self.value_list.append(value)
-  
+        if Globals.pool is None:
+            self_play_results = [__self_play_worker__(self.network, self.mcts_sim_count,
+                                                      self.c_puct, temp_threshold, self.temp, alpha_dirich, game_count)]
+        else:
+            games_per_process = int(game_count / Globals.n_pool_processes)
+            self_play_results = Globals.pool.starmap(__self_play_worker__,
+                                                      zip([self.network] * Globals.n_pool_processes,
+                                                          [self.mcts_sim_count] * Globals.n_pool_processes,
+                                                          [self.c_puct] * Globals.n_pool_processes,
+                                                          [temp_threshold] * Globals.n_pool_processes,
+                                                          [self.temp] * Globals.n_pool_processes,
+                                                          [alpha_dirich] * Globals.n_pool_processes,
+                                                          [games_per_process] * Globals.n_pool_processes))
+
         # add the training examples to the experience buffer
-        state = torch.Tensor(self.state_list).reshape(-1, CONST.NN_INPUT_SIZE)
-        player = torch.Tensor(self.player_list).unsqueeze(1)
-        policy = torch.Tensor(self.policy_list).reshape(-1, CONST.NN_POLICY_SIZE)
-        value = torch.Tensor(self.value_list).unsqueeze(1)
-             
-        self.experience_buffer.add_batch(state, player, policy, value)
-            
+        tot_moves_played = 0
+        for sample in self_play_results:
+            state = torch.Tensor(sample[0]).reshape(-1, CONST.NN_INPUT_SIZE)
+            policy = torch.Tensor(sample[1]).reshape(-1, CONST.NN_POLICY_SIZE)
+            value = torch.Tensor(sample[2]).unsqueeze(1)
+            tot_moves_played += state.shape[0]
+
+            self.experience_buffer.add_batch(state, policy, value)
+
+        print("average number of moves played: ", tot_moves_played / game_count)
+
 
 
     def nn_update(self, update_count):
@@ -211,7 +181,7 @@ class Agent:
             values = values.to(Globals.device)
 
             # train the net with one mini-batch
-            loss_p, loss_v = self.new_network.train_step(states, policies, values)
+            loss_p, loss_v = self.network.train_step(states, policies, values)
             avg_loss_p += loss_p
             avg_loss_v += loss_v
 
@@ -230,42 +200,10 @@ class Agent:
         :param game_count:      the number of games that are played
         :return:                the mean score against the random player 0: lose, 0.5 draw, 1: win
         """
-        az_player = tournament.AlphaZeroPlayer(self.old_network, self.c_puct, self.mcts_sim_count, 0)
+        az_player = tournament.AlphaZeroPlayer(self.network, self.c_puct, self.mcts_sim_count, 0)
         random_player = tournament.RandomPlayer()
         score = tournament.play_one_color(game_count, az_player, color, random_player)
         return score
-    
-    
-    def network_duel(self, min_win_rate, game_count):
-        """
-        lets the old network play against the new network, if the new network has a win rate higher than
-        the passed min_win_rate it will become the old network and a copy of it will be used for future training
-        if the win rate is not reached the new network will be trained for another round
-        :param min_win_rate       the minimal win rate to replace the old with the new network
-        :param game_count:        number of games the old and the new network play against each other
-        :return:                  True if the new network reached the desired win_rate, False otherwise
-        """
-        
-        win_rate = self.play_against_old_net(game_count)
-        print("win rate: ", win_rate)  
-        if win_rate >= min_win_rate:
-            self.old_network = copy.deepcopy(self.new_network)
-            self.old_network.to(Globals.device)
-            return True
-        
-        else:
-            return False
-    
-    
-    def play_against_old_net(self, game_count):
-        """
-        lets the training network play against the previous generation
-        :param game_count:        number of games the old and the new network play against each other
-        :return:                  the win rate
-        """
-
-        score_new = net_vs_net(self.new_network, self.old_network, game_count, self.mcts_sim_count, self.c_puct, 0)
-        return score_new
 
      
 
@@ -296,11 +234,10 @@ class ExperienceBuffer:
 
         
         
-    def add_batch(self, states, players, policies, values):
+    def add_batch(self, states, policies, values):
         """
         adds the multiple experiences to the buffer
         :param states:           the state s_t
-        :param players:          the player who's move it is
         :param policies:         probability value for all actions
         :param values:           value of the current state
         :return:
@@ -318,20 +255,17 @@ class ExperienceBuffer:
             
             # add all elements until the end of the ring buffer array
             self.add_batch(states[0:batch_end_index, :],
-                           players[0:batch_end_index],
                            policies[0:batch_end_index, :],
                            values[0:batch_end_index])
             
             # add the rest of the elements at the beginning of the buffer
             self.add_batch(states[batch_end_index:, :],
-                           players[batch_end_index:],
                            policies[batch_end_index:, :],
                            values[batch_end_index:])
             return
             
         # add the elements into the ring buffer    
         self.state[start_index:end_index, :] = states
-        self.player[start_index:end_index] = players
         self.policy[start_index:end_index, :] = policies
         self.value[start_index:end_index] = values
           
@@ -396,3 +330,53 @@ def net_vs_minimax(net, game_count, mcts_sim_count, c_puct, temp, color=None):
         az_score = tournament.play_one_color(game_count, az_player, color, minimax_player)
 
     return az_score
+
+
+def __self_play_worker__(net, mcts_sim_count, c_puct, temp_threshold, temp, alpha_dirich, game_count):
+    """
+    plays a number of self play games
+    :param net:                 the alpha zero network
+    :param mcts_sim_count:      the monte carlo simulation count
+    :param c_puct:              constant that controls the exploration
+    :param temp_threshold:      up to this move count the temperature will be temp, later it will be 0
+    :param temp:                the temperature
+    :param alpha_dirich:        dirichlet parameter alpha
+    :param game_count:          the number of self-play games to play
+    :return:                    state_list, policy_list, value_list
+    """
+
+    state_list = []
+    policy_list = []
+    value_list = []
+    position_cache = {}         # faster than a shared position dict
+
+    for i in range(game_count):
+        board = tic_tac_toe.BitBoard()
+        mcts = MCTS(c_puct)  # reset the search tree
+
+        # reset the players list
+        player_list = []
+
+        move_count = 0
+        while not board.terminal:
+            state, player = board.white_perspective()
+            temp = 0 if move_count >= temp_threshold else temp
+            policy = mcts.policy_values(board, position_cache, net, mcts_sim_count, temp, alpha_dirich)
+
+            # sample from the policy to determine the move to play
+            move = np.random.choice(len(policy), p=policy)
+            board.play_move(move)
+
+            # save the training example
+            state_list.append(state)
+            player_list.append(player)
+            policy_list.append(policy)
+            move_count += 1
+
+        # calculate the values from the perspective of the player who's move it is
+        reward = board.reward()
+        for player in player_list:
+            value = reward if player == CONST.WHITE_MOVE else -reward
+            value_list.append(value)
+
+    return state_list, policy_list, value_list
